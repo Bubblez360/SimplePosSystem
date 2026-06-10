@@ -6,6 +6,7 @@ import StickyBar from './components/StickyBar'
 import CheckoutModal from './components/CheckoutModal'
 import GCashModal from './components/GCashModal'
 import VariantPickerModal from './components/VariantPickerModal'
+import ReceiptModal from './components/ReceiptModal'
 import BentaScreen from './screens/BentaScreen'
 import MenuScreen from './screens/MenuScreen'
 import UlatScreen from './screens/UlatScreen'
@@ -19,7 +20,7 @@ const SCREENS = {
 }
 
 export default function App() {
-  const { screen, setItems, setCategories, setGcashQR, checkoutOpen, gcashOpen, variantPickerItem } = useStore()
+  const { screen, setItems, setCategories, setGcashQR, checkoutOpen, gcashOpen, variantPickerItem, receiptOpen } = useStore()
 
   useEffect(() => {
     seedDefaultData().then(() => {
@@ -43,6 +44,7 @@ export default function App() {
       {variantPickerItem && <VariantPickerModal />}
       {checkoutOpen && <CheckoutModal />}
       {gcashOpen && <GCashModal />}
+      {receiptOpen && <ReceiptModal />}
     </div>
   )
 }

@@ -58,6 +58,10 @@ export const useStore = create((set, get) => ({
   setGcashOpen: (v) => set({ gcashOpen: v }),
   variantPickerItem: null,
   setVariantPickerItem: (item) => set({ variantPickerItem: item }),
+  receiptOpen: false,
+  setReceiptOpen: (v) => set({ receiptOpen: v }),
+  lastSale: null,
+  setLastSale: (sale) => set({ lastSale: sale }),
 
   // GCash QR
   gcashQR: null,

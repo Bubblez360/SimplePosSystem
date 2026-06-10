@@ -4,7 +4,7 @@ import { printReceipt, isPrinterConnected } from '../utils/printer'
 import { t } from '../i18n'
 
 export default function GCashModal() {
-  const { items, cart, cartAddons, cartNotes, clearCart, setGcashOpen, gcashQR, lang, businessName } = useStore()
+  const { items, cart, cartAddons, cartNotes, clearCart, setGcashOpen, setLastSale, setReceiptOpen, gcashQR, lang, businessName } = useStore()
   const total = cartTotal(items, cart, cartAddons)
   const lines = cartLines(items, cart, cartAddons, cartNotes)
 
@@ -35,6 +35,14 @@ export default function GCashModal() {
     }
     clearCart()
     setGcashOpen(false)
+    setLastSale({
+      ref: sale?.ref,
+      date: new Date().toISOString(),
+      lines: saleData.lines,
+      total,
+      method: 'gcash',
+    })
+    setReceiptOpen(true)
   }
 
   return (

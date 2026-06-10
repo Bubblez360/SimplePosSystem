@@ -7,7 +7,7 @@ import { t } from '../i18n'
 export default function CheckoutModal() {
   const {
     items, cart, cartNotes, setCartNote, cartAddons, setCartAddons,
-    clearCart, setCheckoutOpen, setGcashOpen, lang, businessName,
+    clearCart, setCheckoutOpen, setGcashOpen, setLastSale, setReceiptOpen, lang, businessName,
   } = useStore()
   const total = cartTotal(items, cart, cartAddons)
   const lines = cartLines(items, cart, cartAddons, cartNotes)
@@ -82,6 +82,17 @@ export default function CheckoutModal() {
     clearCart()
     setCashGiven('')
     setCheckoutOpen(false)
+    setLastSale({
+      ref: sale?.ref,
+      date: new Date().toISOString(),
+      lines: saleData.lines,
+      total: discountedTotal,
+      method: 'cash',
+      cashGiven,
+      change,
+      discount: saleData.discount,
+    })
+    setReceiptOpen(true)
   }
 
   return (
