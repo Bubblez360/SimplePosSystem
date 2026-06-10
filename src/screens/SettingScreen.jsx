@@ -9,7 +9,7 @@ import { t } from '../i18n'
 const CAT_EMOJIS = ['🍱','🍗','🥤','☕','🍵','🧋','🍔','🍕','🌮','🍜','🥗','🍰','🍦','🍩','🧁','🥞','🍖','🥪','🍲','🥘']
 
 export default function SettingScreen() {
-  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected } = useStore()
+  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected, currentShift, setShiftModalOpen } = useStore()
   const [nameInput, setNameInput] = useState(businessName)
   const [newCatName, setNewCatName] = useState('')
   const [newCatEmoji, setNewCatEmoji] = useState('🍱')
@@ -253,6 +253,34 @@ export default function SettingScreen() {
               className="w-full h-12 rounded-btn border-2 border-dashed border-border bg-surface text-sm font-bold text-muted flex items-center justify-center gap-2"
             >
               <span>🖨️</span> {t('connectPrinter', lang)}
+            </button>
+          )}
+        </section>
+
+        {/* Shift */}
+        <section>
+          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">⏱️ {lang === 'fil' ? 'Shift' : 'Shift'}</p>
+          {currentShift ? (
+            <div className="flex items-center justify-between px-3 py-3 bg-amber-light border border-amber rounded-card">
+              <div>
+                <p className="text-sm font-bold text-amber-dark">{t('shiftOpen', lang)}</p>
+                <p className="text-xs text-amber-dark/70 mt-0.5">
+                  {new Date(currentShift.openedAt).toLocaleString(lang === 'fil' ? 'fil-PH' : 'en-PH', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+              <button
+                onClick={() => setShiftModalOpen(true)}
+                className="h-9 px-3 rounded-btn bg-amber text-white text-xs font-bold"
+              >
+                {t('closeShift', lang)}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShiftModalOpen(true)}
+              className="w-full h-12 rounded-btn border-2 border-dashed border-border bg-surface text-sm font-bold text-muted flex items-center justify-center gap-2"
+            >
+              <span>⏱️</span> {t('openShift', lang)}
             </button>
           )}
         </section>

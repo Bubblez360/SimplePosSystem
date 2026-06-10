@@ -84,13 +84,17 @@ export default function BentaScreen() {
               const displayPrice = hasVariants
                 ? `₱${Math.min(...item.variants.map(v => v.price)).toFixed(2)}+`
                 : `₱${(item.price ?? 0).toFixed(2)}`
+              const isOutOfStock = item.trackStock && item.stock <= 0
+              const isLowStock = item.trackStock && item.stock > 0 && item.stock <= 5
 
               return (
                 <div
                   key={item.id}
-                  onClick={() => handleItemTap(item)}
-                  className={`item-card relative rounded-card overflow-hidden border cursor-pointer select-none transition-all ${
-                    active ? 'border-amber bg-amber-light' : 'border-border bg-surface'
+                  onClick={() => !isOutOfStock && handleItemTap(item)}
+                  className={`item-card relative rounded-card overflow-hidden border select-none transition-all ${
+                    isOutOfStock ? 'border-border bg-surface opacity-50 cursor-not-allowed'
+                    : active ? 'border-amber bg-amber-light cursor-pointer'
+                    : 'border-border bg-surface cursor-pointer'
                   }`}
                 >
                   <div className="aspect-square flex items-center justify-center bg-surface-2 text-4xl">
@@ -122,9 +126,21 @@ export default function BentaScreen() {
                     </div>
                   )}
 
-                  {hasVariants && (
+                  {hasVariants && !isOutOfStock && (
                     <div className="absolute top-2 right-2 bg-surface/80 rounded px-1 py-0.5">
                       <span className="text-[9px] font-bold text-muted uppercase">sizes</span>
+                    </div>
+                  )}
+
+                  {isOutOfStock && (
+                    <div className="absolute top-2 right-2 bg-red-500 rounded-full px-2 py-0.5">
+                      <span className="text-[9px] font-bold text-white uppercase">{t('outOfStock', lang)}</span>
+                    </div>
+                  )}
+
+                  {isLowStock && (
+                    <div className="absolute top-2 right-2 bg-orange-400 rounded-full px-2 py-0.5">
+                      <span className="text-[9px] font-bold text-white uppercase">{t('lowStock', lang)} {item.stock}</span>
                     </div>
                   )}
                 </div>

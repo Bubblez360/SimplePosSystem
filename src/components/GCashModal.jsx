@@ -14,6 +14,7 @@ export default function GCashModal() {
       itemCount: lines.reduce((s, l) => s + l.qty, 0),
       method: 'gcash',
       lines: lines.map(l => ({
+        itemId: l.id,
         name: l.displayName,
         qty: l.qty,
         subtotal: l.subtotal,

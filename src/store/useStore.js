@@ -71,6 +71,12 @@ export const useStore = create((set, get) => ({
   printerConnected: false,
   setPrinterConnected: (v) => set({ printerConnected: v }),
 
+  // Shift
+  currentShift: null,
+  setCurrentShift: (shift) => set({ currentShift: shift }),
+  shiftModalOpen: false,
+  setShiftModalOpen: (v) => set({ shiftModalOpen: v }),
+
   // Settings
   lang: localStorage.getItem('lang') || 'fil',
   setLang: (lang) => {

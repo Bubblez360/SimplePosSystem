@@ -1,7 +1,7 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'tindapos'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 export async function getDB() {
   return openDB(DB_NAME, DB_VERSION, {
@@ -16,6 +16,9 @@ export async function getDB() {
       if (oldVersion < 2) {
         const catStore = db.createObjectStore('categories', { keyPath: 'id', autoIncrement: true })
         catStore.createIndex('name', 'name')
+      }
+      if (oldVersion < 3) {
+        db.createObjectStore('shifts', { keyPath: 'id', autoIncrement: true })
       }
     },
   })
@@ -37,6 +40,19 @@ export async function saveItem(item) {
 export async function deleteItem(id) {
   const db = await getDB()
   return db.delete('items', id)
+}
+
+export async function decrementStock(lines) {
+  const db = await getDB()
+  const tx = db.transaction('items', 'readwrite')
+  for (const line of lines) {
+    if (!line.itemId) continue
+    const item = await tx.store.get(line.itemId)
+    if (!item || !item.trackStock) continue
+    const newStock = Math.max(0, (item.stock ?? 0) - line.qty)
+    await tx.store.put({ ...item, stock: newStock })
+  }
+  await tx.done
 }
 
 // Categories
@@ -69,6 +85,10 @@ export async function recordSale(sale) {
   const ref = generateRef()
   const date = new Date().toISOString()
   const id = await db.add('sales', { ...sale, ref, date })
+  // Decrement stock for items that track it
+  if (sale.lines?.length) {
+    await decrementStock(sale.lines)
+  }
   return { id, ref, date }
 }
 
@@ -77,6 +97,67 @@ export async function getTodaySales() {
   const all = await db.getAll('sales')
   const today = new Date().toDateString()
   return all.filter(s => new Date(s.date).toDateString() === today)
+}
+
+export async function getSalesByRange(from, to) {
+  const db = await getDB()
+  const all = await db.getAll('sales')
+  return all.filter(s => {
+    const d = new Date(s.date)
+    return d >= from && d <= to
+  })
+}
+
+export async function getWeeklySales() {
+  const now = new Date()
+  const from = new Date(now)
+  from.setDate(now.getDate() - now.getDay()) // start of week (Sunday)
+  from.setHours(0, 0, 0, 0)
+  const to = new Date()
+  return getSalesByRange(from, to)
+}
+
+export async function getMonthlySales() {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), now.getMonth(), 1)
+  const to = new Date()
+  return getSalesByRange(from, to)
+}
+
+// Shifts
+export async function getCurrentShift() {
+  const db = await getDB()
+  return db.get('settings', 'currentShift')
+}
+
+export async function openShift(openingFloat) {
+  const db = await getDB()
+  const shift = {
+    openedAt: new Date().toISOString(),
+    openingFloat: parseFloat(openingFloat) || 0,
+  }
+  await db.put('settings', shift, 'currentShift')
+  return shift
+}
+
+export async function closeShift(sales) {
+  const db = await getDB()
+  const current = await db.get('settings', 'currentShift')
+  if (!current) return null
+  const cashSales = sales.filter(s => s.method === 'cash').reduce((sum, s) => sum + s.total, 0)
+  const gcashSales = sales.filter(s => s.method === 'gcash').reduce((sum, s) => sum + s.total, 0)
+  const record = {
+    ...current,
+    closedAt: new Date().toISOString(),
+    cashSales,
+    gcashSales,
+    totalSales: cashSales + gcashSales,
+    expectedCash: (current.openingFloat || 0) + cashSales,
+    transactionCount: sales.length,
+  }
+  await db.add('shifts', record)
+  await db.delete('settings', 'currentShift')
+  return record
 }
 
 // Seed default data on first run
@@ -100,60 +181,18 @@ export async function seedDefaultData() {
   }
 
   const defaultItems = [
-    {
-      name: 'Milk Tea',
-      emoji: '🧋',
-      photo: null,
-      price: null,
-      categoryId: catIds['Milk Tea'],
+    { name: 'Milk Tea', emoji: '🧋', photo: null, price: null, categoryId: catIds['Milk Tea'], trackStock: false, stock: 0,
       variants: [{ name: 'Small', price: 65 }, { name: 'Medium', price: 75 }, { name: 'Large', price: 90 }],
-      addons: [{ name: 'Extra Pearls', price: 10 }, { name: 'Cream Cheese', price: 15 }, { name: 'Nata de Coco', price: 10 }],
-    },
-    {
-      name: 'Iced Coffee',
-      emoji: '☕',
-      photo: null,
-      price: null,
-      categoryId: catIds['Coffee'],
+      addons: [{ name: 'Extra Pearls', price: 10 }, { name: 'Cream Cheese', price: 15 }, { name: 'Nata de Coco', price: 10 }] },
+    { name: 'Iced Coffee', emoji: '☕', photo: null, price: null, categoryId: catIds['Coffee'], trackStock: false, stock: 0,
       variants: [{ name: 'Small', price: 60 }, { name: 'Medium', price: 70 }, { name: 'Large', price: 80 }],
-      addons: [{ name: 'Extra Shot', price: 20 }, { name: 'Whipped Cream', price: 15 }],
-    },
-    {
-      name: 'Lemonade',
-      emoji: '🍋',
-      photo: null,
-      price: 40,
-      categoryId: catIds['Drinks'],
-      variants: [],
-      addons: [],
-    },
-    {
-      name: 'Rice Meal',
-      emoji: '🍱',
-      photo: null,
-      price: null,
-      categoryId: catIds['Food'],
-      variants: [{ name: 'Regular', price: 80 }, { name: 'Solo', price: 95 }],
-      addons: [],
-    },
-    {
-      name: 'Fries',
-      emoji: '🍟',
-      photo: null,
-      price: 45,
-      categoryId: catIds['Snacks'],
-      variants: [],
-      addons: [{ name: 'Cheese Dip', price: 15 }, { name: 'Sour Cream', price: 15 }],
-    },
-    {
-      name: 'Ice Cream',
-      emoji: '🍦',
-      photo: null,
-      price: 35,
-      categoryId: catIds['Desserts'],
-      variants: [],
-      addons: [],
-    },
+      addons: [{ name: 'Extra Shot', price: 20 }, { name: 'Whipped Cream', price: 15 }] },
+    { name: 'Lemonade', emoji: '🍋', photo: null, price: 40, categoryId: catIds['Drinks'], trackStock: false, stock: 0, variants: [], addons: [] },
+    { name: 'Rice Meal', emoji: '🍱', photo: null, price: null, categoryId: catIds['Food'], trackStock: false, stock: 0,
+      variants: [{ name: 'Regular', price: 80 }, { name: 'Solo', price: 95 }], addons: [] },
+    { name: 'Fries', emoji: '🍟', photo: null, price: 45, categoryId: catIds['Snacks'], trackStock: false, stock: 0,
+      variants: [], addons: [{ name: 'Cheese Dip', price: 15 }, { name: 'Sour Cream', price: 15 }] },
+    { name: 'Ice Cream', emoji: '🍦', photo: null, price: 35, categoryId: catIds['Desserts'], trackStock: false, stock: 0, variants: [], addons: [] },
   ]
   for (const item of defaultItems) {
     await db.add('items', item)

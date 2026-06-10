@@ -57,6 +57,7 @@ export default function CheckoutModal() {
       method: 'cash',
       discount: discountAmount > 0 ? { type: discountType, amount: discountAmount } : null,
       lines: lines.map(l => ({
+        itemId: l.id,
         name: l.displayName,
         qty: l.qty,
         subtotal: l.subtotal,

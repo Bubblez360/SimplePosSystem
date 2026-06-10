@@ -7,7 +7,7 @@ import { t } from '../i18n'
 
 const EMOJIS = ['🍱','🍗','🍖','🌮','🥪','🍜','🍝','🍛','🥘','🍲','🥗','🍔','🌭','🍕','🧆','🥚','🍳','🥞','🧇','🥓','🥩','🧀','🥫','🥦','🥕','🍎','🍊','🍋','🍇','🍓','🫐','🍉','🥭','🍑','🍒','🍌','🍍','🥝','🫙','🧃','🥤','☕','🍵','🧋','🧊','💧']
 
-const DEFAULT_ITEM = { name: '', price: '', emoji: '🍱', photo: null, categoryId: '', variants: [], addons: [] }
+const DEFAULT_ITEM = { name: '', price: '', emoji: '🍱', photo: null, categoryId: '', variants: [], addons: [], trackStock: false, stock: '' }
 
 function getCroppedImg(imgEl, crop) {
   const canvas = document.createElement('canvas')
@@ -55,6 +55,8 @@ export default function MenuScreen() {
       categoryId: item.categoryId ? String(item.categoryId) : '',
       variants: item.variants ? item.variants.map(v => ({ ...v })) : [],
       addons: item.addons ? item.addons.map(a => ({ ...a })) : [],
+      trackStock: item.trackStock || false,
+      stock: item.stock != null ? String(item.stock) : '',
       id: item.id,
     })
     setEditing(item.id)
@@ -84,6 +86,8 @@ export default function MenuScreen() {
       categoryId: form.categoryId ? Number(form.categoryId) : null,
       variants,
       addons,
+      trackStock: form.trackStock,
+      stock: form.trackStock ? (parseInt(form.stock) || 0) : 0,
     })
     await reload()
     setSaving(false)
@@ -340,6 +344,33 @@ export default function MenuScreen() {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Stock tracking */}
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-muted uppercase tracking-wide">{t('trackStock', lang)}</label>
+              <button
+                onClick={() => setForm(f => ({ ...f, trackStock: !f.trackStock }))}
+                className="w-12 h-6 rounded-full transition-colors flex-shrink-0 relative"
+                style={{ background: form.trackStock ? '#F59E0B' : '#E7E5E4' }}
+              >
+                <span
+                  className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all"
+                  style={{ left: form.trackStock ? '26px' : '2px' }}
+                />
+              </button>
+            </div>
+            {form.trackStock && (
+              <input
+                type="number"
+                inputMode="numeric"
+                value={form.stock}
+                onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
+                placeholder="0"
+                className="mt-2 w-full h-11 rounded-lg border border-border px-3 font-mono text-sm bg-surface focus:outline-none focus:border-amber"
+              />
             )}
           </div>
 

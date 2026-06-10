@@ -88,9 +88,32 @@ const strings = {
     // Discount
     discount: 'Diskwento',
     addDiscount: 'Diskwento',
-    // Report
+    // Report periods
     bestSellers: 'Pinaka-Maraming Nabenta',
     exportCSV: 'I-export CSV',
+    periodToday: 'Ngayon',
+    periodWeek: 'Linggo',
+    periodMonth: 'Buwan',
+    weeklySales: 'Benta Ngayong Linggo',
+    monthlySales: 'Benta Ngayong Buwan',
+    // Stock
+    trackStock: 'I-track ang Stock',
+    stockCount: 'Bilang ng Stock',
+    lowStock: 'Mababa',
+    outOfStock: 'Wala na',
+    // Shift
+    openShift: 'Buksan ang Shift',
+    closeShift: 'Isara ang Shift',
+    shiftOpen: 'Shift Bukas',
+    openingFloat: 'Panimulang Pera sa Kahon',
+    expectedCash: 'Inaasahang Cash',
+    shiftSummary: 'Buod ng Shift',
+    shiftCash: 'Cash na Benta',
+    shiftGcash: 'GCash na Benta',
+    shiftTotal: 'Kabuuang Benta',
+    // PWA
+    installApp: 'I-install ang App',
+    installHint: 'I-add sa Home Screen para mas madaling gamitin',
   },
   eng: {
     appName: 'TindaPOS',
@@ -181,9 +204,32 @@ const strings = {
     // Discount
     discount: 'Discount',
     addDiscount: 'Discount',
-    // Report
+    // Report periods
     bestSellers: 'Best Sellers',
     exportCSV: 'Export CSV',
+    periodToday: 'Today',
+    periodWeek: 'Week',
+    periodMonth: 'Month',
+    weeklySales: 'This Week',
+    monthlySales: 'This Month',
+    // Stock
+    trackStock: 'Track Stock',
+    stockCount: 'Stock Count',
+    lowStock: 'Low',
+    outOfStock: 'Out',
+    // Shift
+    openShift: 'Open Shift',
+    closeShift: 'Close Shift',
+    shiftOpen: 'Shift Open',
+    openingFloat: 'Opening Cash Float',
+    expectedCash: 'Expected Cash',
+    shiftSummary: 'Shift Summary',
+    shiftCash: 'Cash Sales',
+    shiftGcash: 'GCash Sales',
+    shiftTotal: 'Total Sales',
+    // PWA
+    installApp: 'Install App',
+    installHint: 'Add to Home Screen for quick access',
   },
 }
 
