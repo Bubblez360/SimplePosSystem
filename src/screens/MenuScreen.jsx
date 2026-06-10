@@ -7,7 +7,7 @@ import { t } from '../i18n'
 
 const EMOJIS = ['🍱','🍗','🍖','🌮','🥪','🍜','🍝','🍛','🥘','🍲','🥗','🍔','🌭','🍕','🧆','🥚','🍳','🥞','🧇','🥓','🥩','🧀','🥫','🥦','🥕','🍎','🍊','🍋','🍇','🍓','🫐','🍉','🥭','🍑','🍒','🍌','🍍','🥝','🫙','🧃','🥤','☕','🍵','🧋','🧊','💧']
 
-const DEFAULT_ITEM = { name: '', price: '', emoji: '🍱', photo: null, categoryId: '', variants: [] }
+const DEFAULT_ITEM = { name: '', price: '', emoji: '🍱', photo: null, categoryId: '', variants: [], addons: [] }
 
 function getCroppedImg(imgEl, crop) {
   const canvas = document.createElement('canvas')
@@ -54,6 +54,7 @@ export default function MenuScreen() {
       photo: item.photo || null,
       categoryId: item.categoryId ? String(item.categoryId) : '',
       variants: item.variants ? item.variants.map(v => ({ ...v })) : [],
+      addons: item.addons ? item.addons.map(a => ({ ...a })) : [],
       id: item.id,
     })
     setEditing(item.id)
@@ -71,6 +72,9 @@ export default function MenuScreen() {
       ? form.variants.filter(v => v.name.trim() && !isNaN(parseFloat(v.price)))
           .map(v => ({ name: v.name.trim(), price: parseFloat(v.price) }))
       : []
+    const addons = (form.addons || [])
+      .filter(a => a.name.trim() && !isNaN(parseFloat(a.price)))
+      .map(a => ({ name: a.name.trim(), price: parseFloat(a.price) }))
     await saveItem({
       id: editing !== 'new' ? editing : undefined,
       name: form.name.trim(),
@@ -79,6 +83,7 @@ export default function MenuScreen() {
       photo: form.photo || null,
       categoryId: form.categoryId ? Number(form.categoryId) : null,
       variants,
+      addons,
     })
     await reload()
     setSaving(false)
@@ -128,6 +133,16 @@ export default function MenuScreen() {
 
   function removeVariant(idx) {
     setForm(f => ({ ...f, variants: f.variants.filter((_, i) => i !== idx) }))
+  }
+
+  function addAddon() {
+    setForm(f => ({ ...f, addons: [...(f.addons || []), { name: '', price: '' }] }))
+  }
+  function updateAddon(idx, field, value) {
+    setForm(f => ({ ...f, addons: (f.addons || []).map((a, i) => i === idx ? { ...a, [field]: value } : a) }))
+  }
+  function removeAddon(idx) {
+    setForm(f => ({ ...f, addons: (f.addons || []).filter((_, i) => i !== idx) }))
   }
 
   // Crop screen
@@ -285,6 +300,43 @@ export default function MenuScreen() {
                       />
                     </div>
                     <button onClick={() => removeVariant(idx)} className="text-error font-bold text-lg leading-none w-8 flex-shrink-0">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add-ons */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-muted uppercase tracking-wide">{t('addons', lang)}</label>
+              <button onClick={addAddon} className="text-xs font-bold text-amber">+ {t('addAddon', lang)}</button>
+            </div>
+            {(form.addons || []).length === 0 && (
+              <p className="text-xs text-faint">{t('noAddons', lang)}</p>
+            )}
+            {(form.addons || []).length > 0 && (
+              <div className="flex flex-col gap-2">
+                {(form.addons || []).map((a, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      value={a.name}
+                      onChange={e => updateAddon(idx, 'name', e.target.value)}
+                      placeholder={t('addonName', lang)}
+                      className="flex-1 h-11 rounded-lg border border-border px-3 text-sm font-semibold bg-surface focus:outline-none focus:border-amber"
+                    />
+                    <div className="relative w-28">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 font-mono text-muted text-sm">+₱</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        value={a.price}
+                        onChange={e => updateAddon(idx, 'price', e.target.value)}
+                        placeholder="0"
+                        className="w-full h-11 rounded-lg border border-border pl-8 pr-2 font-mono text-sm bg-surface focus:outline-none focus:border-amber"
+                      />
+                    </div>
+                    <button onClick={() => removeAddon(idx)} className="text-error font-bold text-lg leading-none w-8 flex-shrink-0">×</button>
                   </div>
                 ))}
               </div>

@@ -2,8 +2,8 @@ import { useStore, cartTotal } from '../store/useStore'
 import { t } from '../i18n'
 
 export default function StickyBar() {
-  const { items, cart, setCheckoutOpen, lang } = useStore()
-  const total = cartTotal(items, cart)
+  const { items, cart, cartAddons, setCheckoutOpen, lang } = useStore()
+  const total = cartTotal(items, cart, cartAddons)
   const hasItems = Object.keys(cart).length > 0
 
   return (

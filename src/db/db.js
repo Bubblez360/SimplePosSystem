@@ -76,6 +76,87 @@ export async function getTodaySales() {
   return all.filter(s => new Date(s.date).toDateString() === today)
 }
 
+// Seed default data on first run
+export async function seedDefaultData() {
+  const db = await getDB()
+  const existingCats = await db.getAll('categories')
+  if (existingCats.length > 0) return
+
+  const catIds = {}
+  const defaultCats = [
+    { name: 'Drinks', emoji: '🥤' },
+    { name: 'Milk Tea', emoji: '🧋' },
+    { name: 'Coffee', emoji: '☕' },
+    { name: 'Food', emoji: '🍱' },
+    { name: 'Snacks', emoji: '🍟' },
+    { name: 'Desserts', emoji: '🍰' },
+  ]
+  for (const cat of defaultCats) {
+    const id = await db.add('categories', cat)
+    catIds[cat.name] = id
+  }
+
+  const defaultItems = [
+    {
+      name: 'Milk Tea',
+      emoji: '🧋',
+      photo: null,
+      price: null,
+      categoryId: catIds['Milk Tea'],
+      variants: [{ name: 'Small', price: 65 }, { name: 'Medium', price: 75 }, { name: 'Large', price: 90 }],
+      addons: [{ name: 'Extra Pearls', price: 10 }, { name: 'Cream Cheese', price: 15 }, { name: 'Nata de Coco', price: 10 }],
+    },
+    {
+      name: 'Iced Coffee',
+      emoji: '☕',
+      photo: null,
+      price: null,
+      categoryId: catIds['Coffee'],
+      variants: [{ name: 'Small', price: 60 }, { name: 'Medium', price: 70 }, { name: 'Large', price: 80 }],
+      addons: [{ name: 'Extra Shot', price: 20 }, { name: 'Whipped Cream', price: 15 }],
+    },
+    {
+      name: 'Lemonade',
+      emoji: '🍋',
+      photo: null,
+      price: 40,
+      categoryId: catIds['Drinks'],
+      variants: [],
+      addons: [],
+    },
+    {
+      name: 'Rice Meal',
+      emoji: '🍱',
+      photo: null,
+      price: null,
+      categoryId: catIds['Food'],
+      variants: [{ name: 'Regular', price: 80 }, { name: 'Solo', price: 95 }],
+      addons: [],
+    },
+    {
+      name: 'Fries',
+      emoji: '🍟',
+      photo: null,
+      price: 45,
+      categoryId: catIds['Snacks'],
+      variants: [],
+      addons: [{ name: 'Cheese Dip', price: 15 }, { name: 'Sour Cream', price: 15 }],
+    },
+    {
+      name: 'Ice Cream',
+      emoji: '🍦',
+      photo: null,
+      price: 35,
+      categoryId: catIds['Desserts'],
+      variants: [],
+      addons: [],
+    },
+  ]
+  for (const item of defaultItems) {
+    await db.add('items', item)
+  }
+}
+
 // Settings
 export async function getSetting(key) {
   const db = await getDB()

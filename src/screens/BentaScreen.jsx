@@ -38,6 +38,7 @@ export default function BentaScreen() {
 
       {/* Category filter tabs */}
       {categories.length > 0 && (
+        <div className="relative">
         <div className="flex gap-2 px-3 pt-3 pb-1 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveCat('all')}
@@ -62,6 +63,8 @@ export default function BentaScreen() {
               {cat.emoji ? `${cat.emoji} ` : ''}{cat.name}
             </button>
           ))}
+        </div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-bg to-transparent pointer-events-none" />
         </div>
       )}
 

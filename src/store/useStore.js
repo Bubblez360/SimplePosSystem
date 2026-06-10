@@ -31,7 +31,25 @@ export const useStore = create((set, get) => ({
     }
     set({ cart })
   },
-  clearCart: () => set({ cart: {} }),
+  clearCart: () => set({ cart: {}, cartNotes: {}, cartAddons: {} }),
+
+  // Per-line notes: { [cartKey]: string }
+  cartNotes: {},
+  setCartNote: (cartKey, note) => {
+    const cartNotes = { ...get().cartNotes }
+    if (note) cartNotes[cartKey] = note
+    else delete cartNotes[cartKey]
+    set({ cartNotes })
+  },
+
+  // Per-line selected add-ons: { [cartKey]: number[] }
+  cartAddons: {},
+  setCartAddons: (cartKey, addonIndices) => {
+    const cartAddons = { ...get().cartAddons }
+    if (addonIndices.length > 0) cartAddons[cartKey] = addonIndices
+    else delete cartAddons[cartKey]
+    set({ cartAddons })
+  },
 
   // Modals
   checkoutOpen: false,
@@ -83,23 +101,26 @@ export function itemTotalQty(cart, itemId) {
     .reduce((sum, [, qty]) => sum + qty, 0)
 }
 
-export function cartTotal(items, cart) {
+export function cartTotal(items, cart, cartAddons = {}) {
   return Object.entries(cart).reduce((sum, [key, qty]) => {
     const { itemId, variantIdx } = parseCartKey(key)
     const item = items.find(i => i.id === itemId)
     if (!item) return sum
-    return sum + resolvePrice(item, variantIdx) * qty
+    const addonTotal = (cartAddons[key] || []).reduce((s, idx) => s + (item.addons?.[idx]?.price ?? 0), 0)
+    return sum + (resolvePrice(item, variantIdx) + addonTotal) * qty
   }, 0)
 }
 
-export function cartLines(items, cart) {
+export function cartLines(items, cart, cartAddons = {}, cartNotes = {}) {
   return Object.entries(cart)
     .filter(([, qty]) => qty > 0)
     .map(([key, qty]) => {
       const { itemId, variantIdx } = parseCartKey(key)
       const item = items.find(i => i.id === itemId)
       if (!item) return null
-      const price = resolvePrice(item, variantIdx)
+      const selectedAddons = (cartAddons[key] || []).map(idx => item.addons?.[idx]).filter(Boolean)
+      const addonTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
+      const price = resolvePrice(item, variantIdx) + addonTotal
       const variantName = variantIdx !== null ? item.variants?.[variantIdx]?.name ?? null : null
       return {
         ...item,
@@ -109,6 +130,8 @@ export function cartLines(items, cart) {
         subtotal: price * qty,
         variantName,
         displayName: variantName ? `${item.name} (${variantName})` : item.name,
+        selectedAddons,
+        note: cartNotes[key] || '',
       }
     })
     .filter(Boolean)

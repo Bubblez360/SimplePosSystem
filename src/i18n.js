@@ -68,6 +68,17 @@ const strings = {
     // Photo crop
     applyCrop: 'I-apply',
     cropHint: 'I-drag para i-crop',
+    // GCash crop
+    cropQR: 'I-crop ang GCash QR',
+    cropQRHint: 'Siguraduhing buong-buo ang QR code sa loob ng crop area',
+    // Add-ons
+    addons: 'Mga Add-on',
+    addAddon: 'Dagdag',
+    addonName: 'Pangalan (hal. Extra Pearls)',
+    noAddons: 'Walang add-ons',
+    // Order notes
+    noteHint: 'hal. less ice, walang sugar...',
+    orderNote: 'Espesyal na Hiling',
   },
   eng: {
     appName: 'TindaPOS',
@@ -138,6 +149,17 @@ const strings = {
     // Photo crop
     applyCrop: 'Apply',
     cropHint: 'Drag to crop',
+    // GCash crop
+    cropQR: 'Crop GCash QR',
+    cropQRHint: 'Make sure the full QR code is visible inside the crop area',
+    // Add-ons
+    addons: 'Add-ons',
+    addAddon: 'Add',
+    addonName: 'Name (e.g. Extra Pearls)',
+    noAddons: 'No add-ons',
+    // Order notes
+    noteHint: 'e.g. less ice, no sugar...',
+    orderNote: 'Special Request',
   },
 }
 

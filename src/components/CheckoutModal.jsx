@@ -4,14 +4,35 @@ import { recordSale } from '../db/db'
 import { t } from '../i18n'
 
 export default function CheckoutModal() {
-  const { items, cart, clearCart, setCheckoutOpen, setGcashOpen, lang } = useStore()
-  const total = cartTotal(items, cart)
-  const lines = cartLines(items, cart)
+  const {
+    items, cart, cartNotes, setCartNote, cartAddons, setCartAddons,
+    clearCart, setCheckoutOpen, setGcashOpen, lang,
+  } = useStore()
+  const total = cartTotal(items, cart, cartAddons)
+  const lines = cartLines(items, cart, cartAddons, cartNotes)
   const [method, setMethod] = useState('cash')
   const [cashGiven, setCashGiven] = useState('')
+  const [expandedNotes, setExpandedNotes] = useState(new Set())
 
   const change = method === 'cash' ? Math.max(0, parseFloat(cashGiven || 0) - total) : 0
   const canConfirm = method === 'gcash' || (method === 'cash' && parseFloat(cashGiven || 0) >= total)
+  const denominations = [20, 50, 100, 200, 500, 1000].filter(v => v >= Math.floor(total))
+
+  function toggleNote(cartKey) {
+    setExpandedNotes(s => {
+      const next = new Set(s)
+      next.has(cartKey) ? next.delete(cartKey) : next.add(cartKey)
+      return next
+    })
+  }
+
+  function toggleAddon(cartKey, addonIdx) {
+    const current = cartAddons[cartKey] || []
+    const updated = current.includes(addonIdx)
+      ? current.filter(i => i !== addonIdx)
+      : [...current, addonIdx]
+    setCartAddons(cartKey, updated)
+  }
 
   async function handleConfirm() {
     if (!canConfirm) return
@@ -24,7 +45,13 @@ export default function CheckoutModal() {
       total,
       itemCount: lines.reduce((s, l) => s + l.qty, 0),
       method: 'cash',
-      lines: lines.map(l => ({ name: l.displayName, qty: l.qty, subtotal: l.subtotal })),
+      lines: lines.map(l => ({
+        name: l.displayName,
+        qty: l.qty,
+        subtotal: l.subtotal,
+        addons: l.selectedAddons.map(a => a.name),
+        note: l.note || '',
+      })),
     })
     clearCart()
     setCashGiven('')
@@ -32,103 +59,213 @@ export default function CheckoutModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/50">
-      <div className="mt-auto bg-bg rounded-t-[20px] overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="bg-surface px-4 py-4 border-b border-border flex items-center justify-between">
-          <p className="text-lg font-extrabold text-text">{t('checkout', lang)}</p>
-          <button onClick={() => setCheckoutOpen(false)} className="text-muted text-2xl leading-none">×</button>
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm">
+      <div
+        className="bg-bg rounded-t-[24px] max-h-[92vh] flex flex-col"
+        style={{ boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full bg-border" />
         </div>
 
-        <div className="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
-          {/* Cart lines */}
-          <div className="bg-surface rounded-card border border-border overflow-hidden">
-            {lines.map(line => (
-              <div key={line.cartKey} className="flex items-center justify-between px-3 py-2.5 border-b border-border last:border-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-lg">{line.photo
-                    ? <img src={line.photo} alt={line.name} className="w-6 h-6 rounded object-cover" />
-                    : line.emoji || '🍱'}</span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-text truncate">{line.displayName}</p>
-                    <p className="text-[11px] text-muted">× {line.qty}</p>
+        {/* Header */}
+        <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
+          <div>
+            <p className="text-xl font-extrabold text-text tracking-tight">{t('checkout', lang)}</p>
+            <p className="text-xs text-muted font-medium mt-0.5">
+              {lines.length} {t('items', lang)} · ₱{total.toFixed(2)}
+            </p>
+          </div>
+          <button
+            onClick={() => setCheckoutOpen(false)}
+            className="w-9 h-9 rounded-full bg-surface-2 flex items-center justify-center text-muted text-lg leading-none"
+            style={{ background: '#F5F5F0' }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-4 pb-2 flex flex-col gap-3">
+
+          {/* ── Order lines — receipt card ── */}
+          <div className="bg-surface rounded-[16px] overflow-hidden" style={{ border: '1px solid #E7E5E4' }}>
+            {/* Receipt header */}
+            <div className="px-4 py-2.5 border-b border-dashed border-border flex items-center justify-between">
+              <p className="text-[10px] font-extrabold text-faint uppercase tracking-widest">Order</p>
+              <p className="text-[10px] font-extrabold text-faint uppercase tracking-widest">Subtotal</p>
+            </div>
+
+            {lines.map(line => {
+              const item = items.find(i => i.id === line.id)
+              const hasAddons = item?.addons?.length > 0
+              const selectedAddons = cartAddons[line.cartKey] || []
+
+              return (
+                <div key={line.cartKey} className="border-b border-dashed border-border last:border-0">
+                  {/* Item row */}
+                  <div className="flex items-start gap-3 px-4 py-3">
+                    {/* Icon */}
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 overflow-hidden"
+                      style={{ background: '#F5F5F0' }}>
+                      {line.photo
+                        ? <img src={line.photo} alt={line.name} className="w-full h-full object-cover" />
+                        : line.emoji || '🍱'}
+                    </div>
+
+                    {/* Name + addons + note */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-text leading-snug">{line.displayName}</p>
+                          <p className="text-xs text-muted font-medium">× {line.qty}</p>
+                        </div>
+                        <p className="font-mono text-sm font-semibold text-text flex-shrink-0 pt-0.5">
+                          ₱{line.subtotal.toFixed(2)}
+                        </p>
+                      </div>
+
+                      {/* Add-ons — horizontal chips */}
+                      {hasAddons && (
+                        <div className="flex gap-1.5 mt-2 overflow-x-auto no-scrollbar pb-0.5">
+                          {item.addons.map((addon, idx) => {
+                            const checked = selectedAddons.includes(idx)
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => toggleAddon(line.cartKey, idx)}
+                                className="flex-shrink-0 h-7 px-2.5 rounded-full text-xs font-bold border transition-all active:scale-95"
+                                style={checked
+                                  ? { background: '#F59E0B', color: '#fff', borderColor: '#F59E0B' }
+                                  : { background: '#F5F5F0', color: '#78716C', borderColor: '#E7E5E4' }}
+                              >
+                                {checked ? '✓ ' : '+ '}{addon.name}
+                                <span className="font-mono ml-0.5">+₱{addon.price}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Note */}
+                      <div className="mt-1.5">
+                        {line.note || expandedNotes.has(line.cartKey) ? (
+                          <input
+                            autoFocus={!line.note}
+                            value={line.note}
+                            onChange={e => setCartNote(line.cartKey, e.target.value)}
+                            placeholder={t('noteHint', lang)}
+                            className="w-full h-8 rounded-lg border px-2.5 text-xs font-medium focus:outline-none"
+                            style={{ background: '#F5F5F0', borderColor: '#E7E5E4', color: '#1C1917' }}
+                            onFocus={e => e.target.style.borderColor = '#F59E0B'}
+                            onBlur={e => e.target.style.borderColor = '#E7E5E4'}
+                          />
+                        ) : (
+                          <button
+                            onClick={() => toggleNote(line.cartKey)}
+                            className="text-[11px] text-faint flex items-center gap-1"
+                          >
+                            <span>✏️</span>
+                            <span className="underline underline-offset-2">{t('orderNote', lang)}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <p className="font-mono text-sm font-medium text-text flex-shrink-0 ml-2">₱{line.subtotal.toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
+              )
+            })}
 
-          {/* Total */}
-          <div className="flex items-center justify-between px-3 py-3 bg-amber-light rounded-card border border-amber">
-            <p className="text-sm font-bold text-amber-dark">{t('totalAmount', lang)}</p>
-            <p className="font-mono text-xl font-medium text-amber-dark">₱{total.toFixed(2)}</p>
-          </div>
-
-          {/* Payment method */}
-          <div>
-            <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">{t('paymentMethod', lang)}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[['cash','💵','cash'],['gcash','💚','gcash']].map(([key, icon, labelKey]) => (
-                <button
-                  key={key}
-                  onClick={() => setMethod(key)}
-                  className={`h-14 rounded-btn border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                    method === key ? 'border-amber bg-amber-light text-amber-dark' : 'border-border bg-surface text-muted'
-                  }`}
-                >
-                  {icon} {t(labelKey, lang)}
-                </button>
-              ))}
+            {/* Total row inside receipt */}
+            <div className="px-4 py-3 flex items-center justify-between"
+              style={{ background: '#FFFBEB', borderTop: '2px dashed #F59E0B' }}>
+              <p className="text-sm font-extrabold text-amber-dark uppercase tracking-wider">{t('totalAmount', lang)}</p>
+              <p className="font-mono text-2xl font-bold text-amber-dark">₱{total.toFixed(2)}</p>
             </div>
           </div>
 
-          {/* Cash entry */}
+          {/* ── Payment method ── */}
+          <div className="grid grid-cols-2 gap-2">
+            {[['cash', '💵', 'cash'], ['gcash', '💚', 'gcash']].map(([key, icon, labelKey]) => (
+              <button
+                key={key}
+                onClick={() => setMethod(key)}
+                className="h-14 rounded-[14px] border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                style={method === key
+                  ? { borderColor: '#F59E0B', background: '#FFFBEB', color: '#D97706' }
+                  : { borderColor: '#E7E5E4', background: '#fff', color: '#78716C' }}
+              >
+                <span className="text-base">{icon}</span>
+                <span>{t(labelKey, lang)}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ── Cash section ── */}
           {method === 'cash' && (
             <div className="flex flex-col gap-2">
-              <div>
-                <p className="text-xs font-bold text-muted uppercase tracking-wide mb-1">{t('amountReceived', lang)}</p>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-medium text-muted">₱</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={cashGiven}
-                    onChange={e => setCashGiven(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full h-14 rounded-lg border border-border pl-7 pr-3 font-mono text-xl font-medium bg-surface focus:outline-none focus:border-amber"
-                  />
-                </div>
+              {/* Amount input */}
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-semibold text-muted text-base">₱</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={cashGiven}
+                  onChange={e => setCashGiven(e.target.value)}
+                  placeholder={t('amountReceived', lang)}
+                  className="w-full h-14 rounded-[14px] border-2 pl-9 pr-4 font-mono text-2xl font-semibold focus:outline-none transition-colors"
+                  style={{ borderColor: cashGiven ? '#F59E0B' : '#E7E5E4', background: '#fff', color: '#1C1917' }}
+                />
               </div>
-              {parseFloat(cashGiven || 0) >= total && (
-                <div className="flex items-center justify-between px-3 py-2.5 bg-green-light rounded-card border border-green">
-                  <p className="text-sm font-bold text-green">{t('change', lang)}</p>
-                  <p className="font-mono text-xl font-medium text-green">₱{change.toFixed(2)}</p>
+
+              {/* Change — revealed when enough cash */}
+              {parseFloat(cashGiven || 0) >= total && parseFloat(cashGiven || 0) > 0 && (
+                <div className="flex items-center justify-between px-4 py-3 rounded-[14px]"
+                  style={{ background: '#DCFCE7', border: '1.5px solid #16A34A' }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">💰</span>
+                    <p className="text-sm font-bold uppercase tracking-wide" style={{ color: '#16A34A' }}>{t('change', lang)}</p>
+                  </div>
+                  <p className="font-mono text-2xl font-bold" style={{ color: '#16A34A' }}>₱{change.toFixed(2)}</p>
                 </div>
               )}
-              <div className="grid grid-cols-4 gap-1.5">
-                {[20, 50, 100, 200, 500, 1000].filter(v => v >= total * 0.8).slice(0, 4).map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setCashGiven(String(v))}
-                    className="h-9 rounded-lg bg-surface border border-border text-xs font-bold text-muted"
-                  >
-                    ₱{v}
-                  </button>
-                ))}
-              </div>
+
+              {/* Denomination quick-picks */}
+              {denominations.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                  {denominations.map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setCashGiven(String(v))}
+                      className="flex-shrink-0 h-11 px-4 rounded-[12px] text-sm font-bold border-2 transition-all active:scale-95"
+                      style={cashGiven === String(v)
+                        ? { background: '#F59E0B', color: '#fff', borderColor: '#F59E0B' }
+                        : { background: '#fff', color: '#78716C', borderColor: '#E7E5E4' }}
+                    >
+                      ₱{v}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        <div className="px-4 pt-2 pb-4 bg-bg border-t border-border">
+        {/* ── Confirm CTA ── */}
+        <div className="px-4 pt-2 pb-6 flex-shrink-0" style={{ borderTop: '1px solid #E7E5E4', background: '#FAFAF7' }}>
           <button
             onClick={handleConfirm}
             disabled={!canConfirm}
-            className={`w-full h-14 rounded-btn font-bold text-base transition-all ${
-              canConfirm ? 'bg-amber text-white' : 'bg-border text-faint cursor-not-allowed'
-            }`}
+            className="w-full h-[60px] rounded-[16px] font-extrabold text-base tracking-wide transition-all active:scale-[0.98]"
+            style={canConfirm
+              ? { background: '#F59E0B', color: '#fff', boxShadow: '0 4px 20px rgba(245,158,11,0.4)' }
+              : { background: '#E7E5E4', color: '#A8A29E', cursor: 'not-allowed' }}
           >
-            {method === 'gcash' ? `${t('gcashQR', lang)} →` : t('confirmPayment', lang)}
+            {method === 'gcash'
+              ? `${t('gcashQR', lang)} →`
+              : canConfirm
+                ? t('confirmPayment', lang)
+                : `₱${Math.max(0, total - parseFloat(cashGiven || 0)).toFixed(2)} ${lang === 'fil' ? 'kulang pa' : 'more needed'}`}
           </button>
         </div>
       </div>

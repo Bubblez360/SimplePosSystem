@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop'
+import 'react-image-crop/dist/ReactCrop.css'
 import { useStore } from '../store/useStore'
 import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory } from '../db/db'
 import { t } from '../i18n'
@@ -12,6 +14,10 @@ export default function SettingScreen() {
   const [newCatEmoji, setNewCatEmoji] = useState('🍱')
   const [showCatEmoji, setShowCatEmoji] = useState(false)
   const [toast, setToast] = useState(null)
+  const [qrCropSrc, setQrCropSrc] = useState(null)
+  const [qrCrop, setQrCrop] = useState()
+  const [qrCompletedCrop, setQrCompletedCrop] = useState(null)
+  const qrImgRef = useRef(null)
 
   useEffect(() => {
     getSetting('gcashQR').then(qr => { if (qr) setGcashQR(qr) })
@@ -27,13 +33,35 @@ export default function SettingScreen() {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = async ev => {
-      const data = ev.target.result
-      setGcashQR(data)
-      await setSetting('gcashQR', data)
-      showToast(lang === 'fil' ? 'GCash QR na-save!' : 'GCash QR saved!')
+    reader.onload = ev => {
+      setQrCropSrc(ev.target.result)
+      setQrCrop(undefined)
+      setQrCompletedCrop(null)
     }
     reader.readAsDataURL(file)
+  }
+
+  function onQrImageLoad(e) {
+    const { width, height } = e.currentTarget
+    const c = centerCrop(makeAspectCrop({ unit: '%', width: 80 }, 1, width, height), width, height)
+    setQrCrop(c)
+  }
+
+  async function applyQrCrop() {
+    if (!qrCompletedCrop || !qrImgRef.current) return
+    const img = qrImgRef.current
+    const canvas = document.createElement('canvas')
+    const scaleX = img.naturalWidth / img.width
+    const scaleY = img.naturalHeight / img.height
+    canvas.width = qrCompletedCrop.width
+    canvas.height = qrCompletedCrop.height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, qrCompletedCrop.x * scaleX, qrCompletedCrop.y * scaleY, qrCompletedCrop.width * scaleX, qrCompletedCrop.height * scaleY, 0, 0, qrCompletedCrop.width, qrCompletedCrop.height)
+    const data = canvas.toDataURL('image/jpeg', 0.92)
+    setGcashQR(data)
+    await setSetting('gcashQR', data)
+    setQrCropSrc(null)
+    showToast(lang === 'fil' ? 'GCash QR na-save!' : 'GCash QR saved!')
   }
 
   function handleNameSave() {
@@ -59,6 +87,27 @@ export default function SettingScreen() {
     const updated = await getAllCategories()
     setCategories(updated)
     showToast(lang === 'fil' ? 'Category nabura!' : 'Category deleted!')
+  }
+
+  if (qrCropSrc) {
+    return (
+      <div className="screen-enter">
+        <header className="sticky top-0 bg-surface border-b border-border px-4 py-3 z-10 flex items-center gap-3">
+          <button onClick={() => setQrCropSrc(null)} className="text-amber font-bold text-sm">← {t('cancel', lang)}</button>
+          <p className="text-lg font-extrabold text-text flex-1">{t('cropQR', lang)}</p>
+          <button onClick={applyQrCrop} className="text-amber font-bold text-sm">{t('applyCrop', lang)}</button>
+        </header>
+        <div className="flex flex-col items-center p-4 gap-4">
+          <p className="text-xs text-muted text-center">{t('cropQRHint', lang)}</p>
+          <ReactCrop crop={qrCrop} onChange={c => setQrCrop(c)} onComplete={c => setQrCompletedCrop(c)} aspect={1}>
+            <img ref={qrImgRef} src={qrCropSrc} alt="qr" onLoad={onQrImageLoad} className="max-w-full rounded-card" />
+          </ReactCrop>
+          <button onClick={applyQrCrop} className="w-full h-12 rounded-btn bg-amber text-white font-bold text-sm">
+            {t('applyCrop', lang)}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

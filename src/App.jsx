@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useStore } from './store/useStore'
-import { getAllItems, getAllCategories, getSetting } from './db/db'
+import { getAllItems, getAllCategories, getSetting, seedDefaultData } from './db/db'
 import BottomNav from './components/BottomNav'
 import StickyBar from './components/StickyBar'
 import CheckoutModal from './components/CheckoutModal'
@@ -22,8 +22,10 @@ export default function App() {
   const { screen, setItems, setCategories, setGcashQR, checkoutOpen, gcashOpen, variantPickerItem } = useStore()
 
   useEffect(() => {
-    getAllItems().then(setItems)
-    getAllCategories().then(setCategories)
+    seedDefaultData().then(() => {
+      getAllItems().then(setItems)
+      getAllCategories().then(setCategories)
+    })
     getSetting('gcashQR').then(qr => { if (qr) setGcashQR(qr) })
   }, [])
 
