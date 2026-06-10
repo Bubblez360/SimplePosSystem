@@ -66,7 +66,10 @@ export function generateRef() {
 
 export async function recordSale(sale) {
   const db = await getDB()
-  return db.add('sales', { ...sale, ref: generateRef(), date: new Date().toISOString() })
+  const ref = generateRef()
+  const date = new Date().toISOString()
+  const id = await db.add('sales', { ...sale, ref, date })
+  return { id, ref, date }
 }
 
 export async function getTodaySales() {

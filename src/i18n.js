@@ -79,6 +79,18 @@ const strings = {
     // Order notes
     noteHint: 'hal. less ice, walang sugar...',
     orderNote: 'Espesyal na Hiling',
+    // Printer
+    connectPrinter: 'I-connect ang Printer',
+    disconnectPrinter: 'I-disconnect',
+    printerConnected: 'Printer: Nakakonekta ✓',
+    printReceipt: 'I-print Resibo',
+    noPrinterSupport: 'Hindi sinusuportahan ng browser na ito',
+    // Discount
+    discount: 'Diskwento',
+    addDiscount: 'Diskwento',
+    // Report
+    bestSellers: 'Pinaka-Maraming Nabenta',
+    exportCSV: 'I-export CSV',
   },
   eng: {
     appName: 'TindaPOS',
@@ -160,6 +172,18 @@ const strings = {
     // Order notes
     noteHint: 'e.g. less ice, no sugar...',
     orderNote: 'Special Request',
+    // Printer
+    connectPrinter: 'Connect Printer',
+    disconnectPrinter: 'Disconnect',
+    printerConnected: 'Printer: Connected ✓',
+    printReceipt: 'Print Receipt',
+    noPrinterSupport: 'Not supported in this browser',
+    // Discount
+    discount: 'Discount',
+    addDiscount: 'Discount',
+    // Report
+    bestSellers: 'Best Sellers',
+    exportCSV: 'Export CSV',
   },
 }
 

@@ -1,19 +1,38 @@
 import { useStore, cartTotal, cartLines } from '../store/useStore'
 import { recordSale } from '../db/db'
+import { printReceipt, isPrinterConnected } from '../utils/printer'
 import { t } from '../i18n'
 
 export default function GCashModal() {
-  const { items, cart, clearCart, setGcashOpen, gcashQR, lang } = useStore()
-  const total = cartTotal(items, cart)
-  const lines = cartLines(items, cart)
+  const { items, cart, cartAddons, cartNotes, clearCart, setGcashOpen, gcashQR, lang, businessName } = useStore()
+  const total = cartTotal(items, cart, cartAddons)
+  const lines = cartLines(items, cart, cartAddons, cartNotes)
 
   async function handlePaid() {
-    await recordSale({
+    const saleData = {
       total,
       itemCount: lines.reduce((s, l) => s + l.qty, 0),
       method: 'gcash',
-      lines: lines.map(l => ({ name: l.displayName, qty: l.qty, subtotal: l.subtotal })),
-    })
+      lines: lines.map(l => ({
+        name: l.displayName,
+        qty: l.qty,
+        subtotal: l.subtotal,
+        addons: l.selectedAddons.map(a => a.name),
+        note: l.note || '',
+      })),
+    }
+    const sale = await recordSale(saleData)
+    if (isPrinterConnected()) {
+      printReceipt({
+        businessName,
+        ref: sale?.ref,
+        date: new Date().toISOString(),
+        lines: saleData.lines,
+        total,
+        method: 'gcash',
+        lang,
+      }).catch(() => {})
+    }
     clearCart()
     setGcashOpen(false)
   }

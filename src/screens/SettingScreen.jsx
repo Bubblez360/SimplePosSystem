@@ -3,12 +3,13 @@ import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { useStore } from '../store/useStore'
 import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory } from '../db/db'
+import { connectPrinter, disconnectPrinter, isSupported as printerSupported } from '../utils/printer'
 import { t } from '../i18n'
 
 const CAT_EMOJIS = ['🍱','🍗','🥤','☕','🍵','🧋','🍔','🍕','🌮','🍜','🥗','🍰','🍦','🍩','🧁','🥞','🍖','🥪','🍲','🥘']
 
 export default function SettingScreen() {
-  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories } = useStore()
+  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected } = useStore()
   const [nameInput, setNameInput] = useState(businessName)
   const [newCatName, setNewCatName] = useState('')
   const [newCatEmoji, setNewCatEmoji] = useState('🍱')
@@ -220,6 +221,39 @@ export default function SettingScreen() {
               <p className="text-xs text-faint">{t('uploadQRHint', lang)}</p>
               <input type="file" accept="image/*" className="hidden" onChange={handleGCashUpload} />
             </label>
+          )}
+        </section>
+
+        {/* Receipt Printer */}
+        <section>
+          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">🖨️ Receipt Printer</p>
+          {!printerSupported() ? (
+            <p className="text-xs text-faint">{t('noPrinterSupport', lang)}</p>
+          ) : printerConnected ? (
+            <div className="flex items-center justify-between px-3 py-3 bg-green-light border border-green rounded-card">
+              <p className="text-sm font-semibold text-green">{t('printerConnected', lang)}</p>
+              <button
+                onClick={async () => { await disconnectPrinter(); setPrinterConnected(false) }}
+                className="text-xs font-bold text-green underline"
+              >
+                {t('disconnectPrinter', lang)}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={async () => {
+                try {
+                  await connectPrinter()
+                  setPrinterConnected(true)
+                  showToast(lang === 'fil' ? 'Printer nakakonekta!' : 'Printer connected!')
+                } catch (e) {
+                  showToast(e.message || (lang === 'fil' ? 'Hindi makakonekta' : 'Could not connect'))
+                }
+              }}
+              className="w-full h-12 rounded-btn border-2 border-dashed border-border bg-surface text-sm font-bold text-muted flex items-center justify-center gap-2"
+            >
+              <span>🖨️</span> {t('connectPrinter', lang)}
+            </button>
           )}
         </section>
 

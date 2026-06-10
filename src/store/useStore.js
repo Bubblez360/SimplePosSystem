@@ -63,6 +63,10 @@ export const useStore = create((set, get) => ({
   gcashQR: null,
   setGcashQR: (v) => set({ gcashQR: v }),
 
+  // Printer
+  printerConnected: false,
+  setPrinterConnected: (v) => set({ printerConnected: v }),
+
   // Settings
   lang: localStorage.getItem('lang') || 'fil',
   setLang: (lang) => {
