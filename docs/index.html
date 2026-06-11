@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TindaPOS — User Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber:       #F59E0B;
+      --amber-dark:  #D97706;
+      --amber-light: #FEF3C7;
+      --green:       #16A34A;
+      --green-light: #DCFCE7;
+      --bg:          #FAFAF7;
+      --surface:     #FFFFFF;
+      --surface-2:   #F5F5F0;
+      --border:      #E7E5E4;
+      --text:        #1C1917;
+      --muted:       #78716C;
+      --faint:       #A8A29E;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(250,250,247,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo-badge {
+      width: 28px; height: 28px;
+      background: var(--amber);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .nav-links a:hover { color: var(--amber-dark); }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(160deg, #FFFBEB 0%, #FEF3C7 40%, #FAFAF7 100%);
+      padding: 5rem 1.5rem 4rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--amber-light);
+      border: 1.5px solid var(--amber);
+      color: var(--amber-dark);
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 6vw, 3.25rem);
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+    .hero h1 span { color: var(--amber-dark); }
+    .hero p {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 500px;
+      margin: 0 auto 2rem;
+      font-weight: 500;
+    }
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--amber);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 12px 28px;
+      border-radius: 14px;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .hero-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(245,158,11,0.5);
+    }
+
+    /* ── Quick nav tabs ── */
+    .tabs-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 1.5rem;
+      min-width: max-content;
+    }
+    .tab-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 16px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-link:hover { color: var(--amber-dark); border-color: var(--amber); }
+
+    /* ── Content ── */
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4rem;
+    }
+
+    /* ── Section ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+    .section-num {
+      width: 32px; height: 32px;
+      background: var(--amber);
+      color: #fff;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .section-desc {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+    }
+
+    /* ── Steps ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .step {
+      background: var(--surface);
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      align-items: flex-start;
+    }
+    .step-dot {
+      width: 24px; height: 24px;
+      background: var(--amber-light);
+      border: 2px solid var(--amber);
+      border-radius: 50%;
+      color: var(--amber-dark);
+      font-size: 0.7rem;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-content strong {
+      display: block;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .step-content span {
+      font-size: 0.83rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ── Feature cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+    }
+    .card-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .card h3 { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .card p { font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+
+    /* ── Tip box ── */
+    .tip {
+      background: var(--green-light);
+      border: 1.5px solid var(--green);
+      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 1rem;
+    }
+    .tip-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .tip-text { font-size: 0.83rem; color: #166534; font-weight: 600; }
+
+    .warn {
+      background: #FFF7ED;
+      border: 1.5px solid #FB923C;
+      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 1rem;
+    }
+    .warn-text { font-size: 0.83rem; color: #9A3412; font-weight: 600; }
+
+    /* ── Screen mockup ── */
+    .mockup {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mockup-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .mockup-row-left { display: flex; align-items: center; gap: 10px; }
+    .mockup-row-icon {
+      width: 36px; height: 36px;
+      background: var(--surface-2);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+    .mockup-row-name { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+    .mockup-row-sub { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+    .mockup-price { font-family: 'DM Mono', monospace; font-size: 0.85rem; font-weight: 500; color: var(--amber-dark); }
+    .mockup-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .mockup-tag.amber { background: var(--amber); color: #fff; }
+    .mockup-tag.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green); }
+    .mockup-total {
+      background: var(--amber-light);
+      border: 1.5px solid var(--amber);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mockup-total-label { font-size: 0.7rem; font-weight: 800; color: var(--amber-dark); text-transform: uppercase; letter-spacing: 0.06em; }
+    .mockup-total-amount { font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 700; color: var(--amber-dark); }
+
+    /* ── Pill tags ── */
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.75rem; }
+    .pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+    }
+    .pill.active { background: var(--amber); border-color: var(--amber); color: #fff; }
+
+    /* ── Kbd ── */
+    kbd {
+      display: inline-block;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--faint);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    footer strong { color: var(--amber-dark); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .hero { padding: 3.5rem 1.25rem 3rem; }
+      .content { padding: 2rem 1.25rem 5rem; gap: 3rem; }
+      .cards { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-badge">🛒</div>
+    TindaPOS
+  </a>
+  <ul class="nav-links">
+    <li><a href="#setup">Setup</a></li>
+    <li><a href="#selling">Selling</a></li>
+    <li><a href="#checkout">Checkout</a></li>
+    <li><a href="#reports">Reports</a></li>
+    <li><a href="#features">Features</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">📖 User Guide · v1.0</div>
+  <h1>How to use<br /><span>TindaPOS</span></h1>
+  <p>Your simple, mobile-first point-of-sale for street vendors, milk tea shops, and small food businesses.</p>
+  <a href="#setup" class="hero-cta">Get Started →</a>
+</div>
+
+<!-- Quick nav tabs -->
+<div class="tabs-wrapper">
+  <div class="tabs">
+    <a href="#setup" class="tab-link">⚙️ Setup</a>
+    <a href="#menu" class="tab-link">📋 Menu</a>
+    <a href="#selling" class="tab-link">🛒 Selling</a>
+    <a href="#checkout" class="tab-link">💳 Checkout</a>
+    <a href="#reports" class="tab-link">📊 Reports</a>
+    <a href="#shift" class="tab-link">🕐 Shift</a>
+    <a href="#features" class="tab-link">✨ Features</a>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="content">
+
+  <!-- 1. First-time setup -->
+  <section id="setup">
+    <div class="section-label">
+      <div class="section-num">1</div>
+      <h2 class="section-title">First-Time Setup</h2>
+    </div>
+    <p class="section-desc">Before you start selling, set up your business info and payment options in the <strong>Settings</strong> tab (⚙️ bottom-right).</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong>Enter your business name</strong>
+          <span>Your store name appears at the top of every screen and on receipts.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong>Upload your GCash QR code</strong>
+          <span>Screenshot your QR from the GCash app, upload it here. You can crop it to fit perfectly.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong>Add your categories</strong>
+          <span>e.g. Drinks 🥤, Snacks 🍟, Milk Tea 🧋 — these filter your items while selling.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong>Add items to your menu</strong>
+          <span>Go to the Menu tab (📋) and tap the + button to add your first item.</span>
+        </div>
+      </div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text">TindaPOS works fully offline — no internet required during selling. Your data stays on the device.</div>
+    </div>
+  </section>
+
+  <!-- 2. Menu management -->
+  <section id="menu">
+    <div class="section-label">
+      <div class="section-num">2</div>
+      <h2 class="section-title">Managing Your Menu</h2>
+    </div>
+    <p class="section-desc">Go to the <strong>Menu tab</strong> (📋) to add, edit, or delete items.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong>Tap the + button</strong>
+          <span>Opens a form to create a new item. Fill in the name and price.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong>Add a photo or emoji</strong>
+          <span>Upload a product photo or pick an emoji icon to represent the item on the sell screen.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong>Add sizes / variants (optional)</strong>
+          <span>e.g. Small ₱65, Medium ₱75, Large ₱90. When variants exist, tapping the item opens a size picker.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong>Add add-ons (optional)</strong>
+          <span>e.g. Extra Pearls +₱10, Cream Cheese +₱15. These appear as tappable chips in checkout.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">5</div>
+        <div class="step-content">
+          <strong>Enable stock tracking (optional)</strong>
+          <span>Enter a stock count and toggle Track Stock on. The count decrements automatically after each sale.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mockup of a menu item -->
+    <div class="mockup">
+      <div class="mockup-row">
+        <div class="mockup-row-left">
+          <div class="mockup-row-icon">🧋</div>
+          <div>
+            <div class="mockup-row-name">Milk Tea</div>
+            <div class="mockup-row-sub">Small / Medium / Large</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="mockup-tag amber">SIZES</span>
+          <span class="mockup-price">₱65+</span>
+        </div>
+      </div>
+      <div class="mockup-row">
+        <div class="mockup-row-left">
+          <div class="mockup-row-icon">🍟</div>
+          <div>
+            <div class="mockup-row-name">Fries</div>
+            <div class="mockup-row-sub">Cheese Dip / Sour Cream</div>
+          </div>
+        </div>
+        <span class="mockup-price">₱45.00</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Taking an order -->
+  <section id="selling">
+    <div class="section-label">
+      <div class="section-num">3</div>
+      <h2 class="section-title">Taking an Order</h2>
+    </div>
+    <p class="section-desc">The <strong>Sell tab</strong> (🛒) is where you work during service. Tap items to add them to the cart.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong>Filter by category</strong>
+          <span>Use the pill tabs at the top to quickly jump between Drinks, Food, Snacks, etc.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong>Tap an item to add it</strong>
+          <span>Items with sizes open a picker first. Plain items go straight into the cart.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong>View and edit your cart</strong>
+          <span>Tap the total bar at the bottom (▲) to expand the cart. Use the big − and + buttons to adjust quantities.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong>Tap "Bayad na →" to checkout</strong>
+          <span>Opens the checkout sheet with the full order summary.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category pills mockup -->
+    <div class="pill-row">
+      <span class="pill active">Lahat</span>
+      <span class="pill">🥤 Drinks</span>
+      <span class="pill">🧋 Milk Tea</span>
+      <span class="pill">☕ Coffee</span>
+      <span class="pill">🍱 Food</span>
+      <span class="pill">🍟 Snacks</span>
+    </div>
+
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text">The cart bar shows a badge with the item count. Expand it to see the full order and remove items with the big − button.</div>
+    </div>
+  </section>
+
+  <!-- 4. Checkout -->
+  <section id="checkout">
+    <div class="section-label">
+      <div class="section-num">4</div>
+      <h2 class="section-title">Checkout Process</h2>
+    </div>
+    <p class="section-desc">The checkout sheet shows your order summary, payment options, and calculates change automatically.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong>Review the order</strong>
+          <span>All items, add-ons, and special requests are listed. Tap add-on chips to add/remove them. Tap ✏️ to add a note (e.g. "less ice").</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong>Apply a discount (optional)</strong>
+          <span>Tap the "🏷️ Diskwento" link. Choose flat ₱ or % and enter the amount. The total updates live.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong>Choose Cash or GCash</strong>
+          <span>For Cash: enter the amount received or tap a denomination chip (₱100, ₱500…). Change is shown automatically.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong>Tap the confirm button</strong>
+          <span>For GCash: your QR code is shown full-screen for the customer to scan. Tap "Paid" when done.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">5</div>
+        <div class="step-content">
+          <strong>Digital receipt appears</strong>
+          <span>A receipt screen shows the full order, total, and change. Tap "Done" to return to selling.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total mockup -->
+    <div class="mockup">
+      <div class="mockup-total">
+        <div>
+          <div class="mockup-total-label">Total Amount</div>
+          <div class="mockup-total-amount">₱165.00</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:#fff;border:2px solid #F59E0B;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:0.85rem;color:#D97706;">💵 Cash</div>
+        <div style="flex:1;background:#fff;border:2px solid #E7E5E4;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:0.85rem;color:#78716C;">💚 GCash</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Reports -->
+  <section id="reports">
+    <div class="section-label">
+      <div class="section-num">5</div>
+      <h2 class="section-title">Viewing Sales Reports</h2>
+    </div>
+    <p class="section-desc">The <strong>Report tab</strong> (📊) shows your sales data for today, this week, or this month.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong>Switch time periods</strong>
+          <span>Tap Today / Linggo / Buwan tabs at the top to switch between daily, weekly, and monthly views.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong>See total revenue + breakdown</strong>
+          <span>The summary card shows total transactions. Below it, Cash vs GCash split cards appear.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong>Check Best Sellers</strong>
+          <span>A ranked list of your top items by quantity sold, with total revenue per item.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong>Tap any transaction to expand it</strong>
+          <span>See the full itemized order, add-ons, special requests, and discount applied.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">5</div>
+        <div class="step-content">
+          <strong>Export to CSV</strong>
+          <span>Tap the "📥 Export CSV" button in the header to download your sales data as a spreadsheet.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Shift management -->
+  <section id="shift">
+    <div class="section-label">
+      <div class="section-num">6</div>
+      <h2 class="section-title">Shift Management</h2>
+    </div>
+    <p class="section-desc">Track your cash float at the start of each shift and get a summary when you close.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong>Open a shift</strong>
+          <span>Go to Settings → tap "Open Shift". Enter the starting cash in your drawer (e.g. ₱500 for change).</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong>Sell normally throughout the day</strong>
+          <span>All transactions during the open shift are tracked automatically.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong>Close the shift at end of day</strong>
+          <span>Tap "Close Shift" to see your summary: cash sales, GCash sales, total, and expected cash in drawer.</span>
+        </div>
+      </div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text">Expected Cash = Opening Float + Cash Sales. Count your actual drawer and compare to catch any discrepancies.</div>
+    </div>
+  </section>
+
+  <!-- 7. Features overview -->
+  <section id="features">
+    <div class="section-label">
+      <div class="section-num">7</div>
+      <h2 class="section-title">Features at a Glance</h2>
+    </div>
+    <p class="section-desc">Everything TindaPOS can do — built for Filipino street vendors and milk tea shops.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🛒</div>
+        <h3>Fast Selling</h3>
+        <p>Tap items to add, expand cart for big ± buttons, charge in seconds.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧋</div>
+        <h3>Variants & Sizes</h3>
+        <p>Small / Medium / Large with different prices per variant.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">✨</div>
+        <h3>Add-ons</h3>
+        <p>Extra Pearls, Cream Cheese, Whipped Cream — tappable chips at checkout.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">✏️</div>
+        <h3>Order Notes</h3>
+        <p>Per-item special requests — "less ice", "no sugar", "extra spicy".</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏷️</div>
+        <h3>Discounts</h3>
+        <p>Flat ₱ or percentage % discount applied at checkout.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">💚</div>
+        <h3>GCash QR</h3>
+        <p>Upload your QR once. Full-screen display for customers to scan.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🖨️</div>
+        <h3>Receipt Printer</h3>
+        <p>ESC/POS thermal printer via USB (Chrome/Edge desktop only).</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h3>Stock Tracking</h3>
+        <p>Optional per-item stock count, auto-decremented after each sale.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>Sales Reports</h3>
+        <p>Today, weekly, monthly — with best sellers and CSV export.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🕐</div>
+        <h3>Shift Management</h3>
+        <p>Open with a cash float, close for a full shift summary.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📲</div>
+        <h3>PWA / Installable</h3>
+        <p>Add to Home Screen on Android Chrome for a native app feel.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <h3>Offline First</h3>
+        <p>No internet needed. All data stored locally on your device.</p>
+      </div>
+    </div>
+
+    <div class="warn">
+      <div class="tip-icon">⚠️</div>
+      <div class="warn-text">Receipt printer (Web Serial API) only works on Chrome or Edge on a desktop/laptop. It is not supported on Safari or mobile browsers.</div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Footer -->
+<footer>
+  <p>Made with ❤️ for Filipino vendors · <strong>TindaPOS</strong></p>
+  <p style="margin-top:4px;">Open source · <a href="https://github.com/kingnoob3605/SimplePosSystem" style="color:var(--amber-dark);font-weight:700;">GitHub</a></p>
+</footer>
+
+</body>
+</html>
