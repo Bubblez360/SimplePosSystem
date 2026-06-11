@@ -129,7 +129,7 @@ export default function UlatScreen() {
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className="flex-1 h-8 rounded-lg text-xs font-bold transition-all"
+              className="flex-1 h-10 rounded-lg text-xs font-bold transition-all"
               style={period === p
                 ? { background: '#F59E0B', color: '#fff' }
                 : { background: '#F5F5F0', color: '#78716C' }}

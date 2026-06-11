@@ -98,7 +98,7 @@ export default function CheckoutModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm">
-      <div className="bg-bg rounded-t-[24px] max-h-[92vh] flex flex-col"
+      <div className="bg-bg rounded-t-[24px] max-h-[92vh] flex flex-col w-full max-w-2xl mx-auto"
         style={{ boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}>
 
         {/* Drag handle */}
@@ -328,7 +328,7 @@ export default function CheckoutModal() {
         </div>
 
         {/* ── Confirm CTA ── */}
-        <div className="px-4 pt-2 pb-6 flex-shrink-0" style={{ borderTop: '1px solid #E7E5E4', background: '#FAFAF7' }}>
+        <div className="px-4 pt-2 sheet-pb flex-shrink-0" style={{ borderTop: '1px solid #E7E5E4', background: '#FAFAF7' }}>
           <button
             onClick={handleConfirm}
             disabled={!canConfirm}

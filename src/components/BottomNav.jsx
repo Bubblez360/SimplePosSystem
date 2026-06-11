@@ -13,7 +13,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-surface border-t border-border safe-bottom z-30">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-4 h-16 max-w-3xl mx-auto">
         {tabs.map(tab => {
           const active = screen === tab.key
           return (

@@ -36,7 +36,7 @@ export default function ShiftModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm">
-      <div className="w-full bg-bg rounded-t-[24px] max-h-[80vh] flex flex-col"
+      <div className="w-full bg-bg rounded-t-[24px] max-h-[80vh] flex flex-col max-w-2xl mx-auto"
         style={{ boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}>
 
         {/* Handle */}
@@ -55,7 +55,7 @@ export default function ShiftModal() {
           >×</button>
         </div>
 
-        <div className="px-5 pb-8 flex flex-col gap-4 overflow-y-auto">
+        <div className="px-5 sheet-pb flex flex-col gap-4 overflow-y-auto">
 
           {summary ? (
             /* Closed shift summary */

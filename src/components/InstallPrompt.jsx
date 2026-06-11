@@ -32,8 +32,8 @@ export default function InstallPrompt() {
   if (!deferredPrompt || dismissed) return null
 
   return (
-    <div className="fixed bottom-[72px] left-3 right-3 z-40 rounded-[16px] border border-amber bg-amber-light px-4 py-3 flex items-center gap-3"
-      style={{ boxShadow: '0 4px 20px rgba(245,158,11,0.25)' }}>
+    <div className="fixed left-3 right-3 z-40 rounded-[16px] border border-amber bg-amber-light px-4 py-3 flex items-center gap-3 max-w-md mx-auto"
+      style={{ boxShadow: '0 4px 20px rgba(245,158,11,0.25)', bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
       <span className="text-2xl flex-shrink-0">📲</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-extrabold text-amber-dark leading-tight">{t('installApp', lang)}</p>

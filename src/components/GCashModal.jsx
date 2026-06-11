@@ -47,7 +47,8 @@ export default function GCashModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-between py-8 px-4">
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-between px-4"
+      style={{ paddingTop: 'calc(2rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}>
       <div className="text-center">
         <p className="text-white/60 text-sm font-semibold mb-1">{t('totalAmount', lang)}</p>
         <p className="font-mono text-4xl font-medium text-amber">₱{total.toFixed(2)}</p>

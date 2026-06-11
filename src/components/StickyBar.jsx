@@ -20,7 +20,7 @@ export default function StickyBar() {
   if (!hasItems) return null
 
   return (
-    <div className="fixed bottom-16 left-0 right-0 z-20 px-3 pb-2">
+    <div className="fixed above-nav left-0 right-0 z-20 px-3 pb-2 max-w-3xl mx-auto">
 
       {/* ── Expandable cart list ── */}
       {expanded && (

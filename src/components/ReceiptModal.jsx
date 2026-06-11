@@ -33,7 +33,7 @@ export default function ReceiptModal() {
       </div>
 
       {/* Receipt body */}
-      <div className="flex-1 px-4 py-4 flex flex-col gap-0">
+      <div className="flex-1 px-4 py-4 flex flex-col gap-0 w-full max-w-md mx-auto">
         <div className="bg-surface rounded-[18px] overflow-hidden" style={{ border: '1px solid #E7E5E4' }}>
 
           {/* Store name + ref */}
@@ -116,7 +116,7 @@ export default function ReceiptModal() {
       </div>
 
       {/* Done button */}
-      <div className="px-4 pt-2 pb-8">
+      <div className="px-4 pt-2 w-full max-w-md mx-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}>
         <button
           onClick={handleDone}
           className="w-full h-[56px] rounded-[16px] font-extrabold text-base tracking-wide text-white"

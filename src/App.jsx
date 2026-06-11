@@ -37,7 +37,9 @@ export default function App() {
   return (
     <div className="flex flex-col h-full bg-bg">
       <main className="flex-1 overflow-y-auto pb-[136px]">
-        <Screen />
+        <div className="w-full max-w-3xl mx-auto">
+          <Screen />
+        </div>
       </main>
 
       {screen === 'benta' && <StickyBar />}
