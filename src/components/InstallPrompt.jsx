@@ -37,7 +37,7 @@ export default function InstallPrompt() {
       <span className="text-2xl flex-shrink-0">📲</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-extrabold text-amber-dark leading-tight">{t('installApp', lang)}</p>
-        <p className="text-xs text-amber-dark/70 leading-tight mt-0.5">{t('installHint', lang)}</p>
+        <p className="text-xs text-amber-dark opacity-70 leading-tight mt-0.5">{t('installHint', lang)}</p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
@@ -48,7 +48,7 @@ export default function InstallPrompt() {
         </button>
         <button
           onClick={handleDismiss}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-amber-dark/60 text-lg leading-none"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-amber-dark opacity-60 text-lg leading-none"
         >×</button>
       </div>
     </div>

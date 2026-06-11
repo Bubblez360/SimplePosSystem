@@ -26,7 +26,7 @@ export default function StickyBar() {
       {expanded && (
         <div
           className="mb-2 bg-surface rounded-[16px] overflow-hidden flex flex-col"
-          style={{ border: '1px solid #E7E5E4', boxShadow: '0 -4px 24px rgba(0,0,0,0.10)', maxHeight: '46vh' }}
+          style={{ border: '1px solid var(--border)', boxShadow: '0 -4px 24px rgba(0,0,0,0.10)', maxHeight: '46vh' }}
         >
           {/* Cart header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
@@ -52,7 +52,7 @@ export default function StickyBar() {
                 {/* Icon */}
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center text-xl flex-shrink-0 overflow-hidden"
-                  style={{ background: '#F5F5F0' }}
+                  style={{ background: 'var(--surface-2)' }}
                 >
                   {line.photo
                     ? <img src={line.photo} alt={line.name} className="w-full h-full object-cover" />
@@ -69,20 +69,20 @@ export default function StickyBar() {
                   <button
                     onClick={() => removeFromCart(line.cartKey)}
                     className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold"
-                    style={{ background: '#F5F5F0', border: '1.5px solid #E7E5E4', color: '#78716C' }}
+                    style={{ background: 'var(--surface-2)', border: '1.5px solid var(--border)', color: 'var(--text-muted)' }}
                   >−</button>
                   <span className="w-6 text-center font-mono text-sm font-bold text-text">{line.qty}</span>
                   <button
                     onClick={() => addToCart(line.cartKey)}
                     className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold"
-                    style={{ background: '#F59E0B', color: '#fff' }}
+                    style={{ background: 'var(--amber)', color: '#fff' }}
                   >+</button>
                 </div>
 
                 {/* Price */}
                 <p
                   className="font-mono text-sm font-semibold flex-shrink-0 text-right"
-                  style={{ minWidth: '52px', color: '#D97706' }}
+                  style={{ minWidth: '52px', color: 'var(--amber-dark)' }}
                 >
                   ₱{line.subtotal.toFixed(2)}
                 </p>
@@ -95,7 +95,7 @@ export default function StickyBar() {
       {/* ── Bottom bar ── */}
       <div
         className="bg-surface rounded-btn flex items-center justify-between px-4 h-[56px]"
-        style={{ border: '1px solid #E7E5E4', boxShadow: '0 2px 16px rgba(0,0,0,0.10)' }}
+        style={{ border: '1px solid var(--border)', boxShadow: '0 2px 16px rgba(0,0,0,0.10)' }}
       >
         {/* Tap to expand/collapse cart */}
         <button
@@ -104,7 +104,7 @@ export default function StickyBar() {
         >
           <span
             className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white flex-shrink-0"
-            style={{ background: '#F59E0B' }}
+            style={{ background: 'var(--amber)' }}
           >
             {itemCount}
           </span>

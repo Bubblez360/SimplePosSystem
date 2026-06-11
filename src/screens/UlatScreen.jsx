@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
-import { getTodaySales, getWeeklySales, getMonthlySales } from '../db/db'
+import {
+  getTodaySales, getWeeklySales, getMonthlySales,
+  getTodayExpenses, getWeeklyExpenses, getMonthlyExpenses,
+  addExpense, deleteExpense,
+} from '../db/db'
 import { t } from '../i18n'
 
 const PERIODS = ['today', 'week', 'month']
@@ -96,16 +100,131 @@ function BestSellers({ sales, lang }) {
   )
 }
 
+const SALES_LOADERS = { today: getTodaySales, week: getWeeklySales, month: getMonthlySales }
+const EXPENSE_LOADERS = { today: getTodayExpenses, week: getWeeklyExpenses, month: getMonthlyExpenses }
+
+function GastosSection({ expenses, lang, onAdd, onDelete }) {
+  const [name, setName] = useState('')
+  const [amount, setAmount] = useState('')
+  const gastosTotal = expenses.reduce((sum, e) => sum + e.amount, 0)
+
+  function handleAdd() {
+    const amt = parseFloat(amount)
+    if (!amt || amt <= 0) return
+    onAdd({ name: name.trim(), amount: amt })
+    setName('')
+    setAmount('')
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-card overflow-hidden">
+      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+        <p className="text-[10px] font-extrabold text-faint uppercase tracking-widest">🧾 {t('gastos', lang)}</p>
+        {gastosTotal > 0 && (
+          <p className="font-mono text-sm font-bold" style={{ color: 'var(--error)' }}>-₱{gastosTotal.toFixed(2)}</p>
+        )}
+      </div>
+
+      {/* Add expense row */}
+      <div className="flex gap-2 px-4 py-2.5">
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder={t('gastosName', lang)}
+          className="flex-1 min-w-0 h-11 rounded-lg border border-border px-3 text-sm font-medium bg-surface-2 focus:outline-none focus:border-amber text-text"
+        />
+        <input
+          type="number"
+          inputMode="decimal"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          placeholder="₱0"
+          className="w-20 h-11 rounded-lg border border-border px-2 font-mono text-sm font-semibold bg-surface-2 focus:outline-none focus:border-amber text-text"
+        />
+        <button
+          onClick={handleAdd}
+          disabled={!parseFloat(amount)}
+          className="h-11 px-3.5 rounded-btn bg-amber text-white font-bold text-sm disabled:opacity-40 flex-shrink-0"
+        >
+          {t('addGastos', lang)}
+        </button>
+      </div>
+
+      {expenses.length > 0 && (
+        <div className="border-t border-border">
+          {[...expenses].reverse().map(exp => (
+            <div key={exp.id} className="flex items-center justify-between px-4 py-2 border-b border-border last:border-0">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text truncate">{exp.name || t('gastos', lang)}</p>
+                <p className="text-[10px] text-faint">
+                  {new Date(exp.date).toLocaleString(lang === 'fil' ? 'fil-PH' : 'en-PH', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                  })}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                <p className="font-mono text-sm font-semibold" style={{ color: 'var(--error)' }}>-₱{exp.amount.toFixed(2)}</p>
+                <button
+                  onClick={() => onDelete(exp.id)}
+                  className="w-8 h-8 flex items-center justify-center text-faint text-base"
+                >×</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function KitaCard({ sales, expenses, lang }) {
+  const bentaTotal = sales.reduce((sum, s) => sum + s.total, 0)
+  const gastosTotal = expenses.reduce((sum, e) => sum + e.amount, 0)
+  if (gastosTotal === 0) return null
+  const kita = bentaTotal - gastosTotal
+
+  return (
+    <div className="bg-surface border border-border rounded-card p-4 flex flex-col gap-1.5">
+      <div className="flex justify-between items-center">
+        <p className="text-xs text-muted">{t('benta2', lang)}</p>
+        <p className="font-mono text-sm font-semibold text-text">₱{bentaTotal.toFixed(2)}</p>
+      </div>
+      <div className="flex justify-between items-center">
+        <p className="text-xs text-muted">{t('gastos', lang)}</p>
+        <p className="font-mono text-sm font-semibold" style={{ color: 'var(--error)' }}>-₱{gastosTotal.toFixed(2)}</p>
+      </div>
+      <div className="flex justify-between items-center pt-1.5 mt-0.5 border-t border-border">
+        <p className="text-sm font-extrabold text-text uppercase tracking-wide">💰 {t('kita', lang)}</p>
+        <p className="font-mono text-xl font-bold" style={{ color: kita >= 0 ? 'var(--green)' : 'var(--error)' }}>
+          ₱{kita.toFixed(2)}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function UlatScreen() {
   const { lang } = useStore()
   const [period, setPeriod] = useState('today')
   const [sales, setSales] = useState([])
+  const [expenses, setExpenses] = useState([])
   const [expanded, setExpanded] = useState(null)
 
   useEffect(() => {
-    const loaders = { today: getTodaySales, week: getWeeklySales, month: getMonthlySales }
-    loaders[period]().then(setSales)
+    SALES_LOADERS[period]().then(setSales)
+    EXPENSE_LOADERS[period]().then(setExpenses)
   }, [period])
+
+  async function handleAddExpense(expense) {
+    await addExpense(expense)
+    EXPENSE_LOADERS[period]().then(setExpenses)
+  }
+
+  async function handleDeleteExpense(id) {
+    await deleteExpense(id)
+    EXPENSE_LOADERS[period]().then(setExpenses)
+  }
 
   const periodLabel = { today: t('periodToday', lang), week: t('periodWeek', lang), month: t('periodMonth', lang) }
 
@@ -131,8 +250,8 @@ export default function UlatScreen() {
               onClick={() => setPeriod(p)}
               className="flex-1 h-10 rounded-lg text-xs font-bold transition-all"
               style={period === p
-                ? { background: '#F59E0B', color: '#fff' }
-                : { background: '#F5F5F0', color: '#78716C' }}
+                ? { background: 'var(--amber)', color: '#fff' }
+                : { background: 'var(--surface-2)', color: 'var(--text-muted)' }}
             >
               {periodLabel[p]}
             </button>
@@ -142,6 +261,8 @@ export default function UlatScreen() {
 
       <div className="p-4 flex flex-col gap-3">
         <SummaryCard sales={sales} lang={lang} />
+        <KitaCard sales={sales} expenses={expenses} lang={lang} />
+        <GastosSection expenses={expenses} lang={lang} onAdd={handleAddExpense} onDelete={handleDeleteExpense} />
         <BestSellers sales={sales} lang={lang} />
       </div>
 

@@ -354,7 +354,7 @@ export default function MenuScreen() {
               <button
                 onClick={() => setForm(f => ({ ...f, trackStock: !f.trackStock }))}
                 className="w-12 h-6 rounded-full transition-colors flex-shrink-0 relative"
-                style={{ background: form.trackStock ? '#F59E0B' : '#E7E5E4' }}
+                style={{ background: form.trackStock ? 'var(--amber)' : 'var(--border)' }}
               >
                 <span
                   className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all"

@@ -117,14 +117,14 @@ export default function CheckoutModal() {
           <button
             onClick={() => setCheckoutOpen(false)}
             className="w-9 h-9 rounded-full flex items-center justify-center text-muted text-lg leading-none"
-            style={{ background: '#F5F5F0' }}
+            style={{ background: 'var(--surface-2)' }}
           >×</button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-4 pb-2 flex flex-col gap-3">
 
           {/* ── Receipt card ── */}
-          <div className="bg-surface rounded-[16px] overflow-hidden" style={{ border: '1px solid #E7E5E4' }}>
+          <div className="bg-surface rounded-[16px] overflow-hidden" style={{ border: '1px solid var(--border)' }}>
             <div className="px-4 py-2.5 border-b border-dashed border-border flex items-center justify-between">
               <p className="text-[10px] font-extrabold text-faint uppercase tracking-widest">Order</p>
               <p className="text-[10px] font-extrabold text-faint uppercase tracking-widest">Subtotal</p>
@@ -138,7 +138,7 @@ export default function CheckoutModal() {
                 <div key={line.cartKey} className="border-b border-dashed border-border last:border-0">
                   <div className="flex items-start gap-3 px-4 py-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 overflow-hidden"
-                      style={{ background: '#F5F5F0' }}>
+                      style={{ background: 'var(--surface-2)' }}>
                       {line.photo
                         ? <img src={line.photo} alt={line.name} className="w-full h-full object-cover" />
                         : line.emoji || '🍱'}
@@ -163,8 +163,8 @@ export default function CheckoutModal() {
                                 onClick={() => toggleAddon(line.cartKey, idx)}
                                 className="flex-shrink-0 h-7 px-2.5 rounded-full text-xs font-bold border transition-all active:scale-95"
                                 style={checked
-                                  ? { background: '#F59E0B', color: '#fff', borderColor: '#F59E0B' }
-                                  : { background: '#F5F5F0', color: '#78716C', borderColor: '#E7E5E4' }}
+                                  ? { background: 'var(--amber)', color: '#fff', borderColor: 'var(--amber)' }
+                                  : { background: 'var(--surface-2)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}
                               >
                                 {checked ? '✓ ' : '+ '}{addon.name}
                                 <span className="font-mono ml-0.5">+₱{addon.price}</span>
@@ -181,9 +181,9 @@ export default function CheckoutModal() {
                             onChange={e => setCartNote(line.cartKey, e.target.value)}
                             placeholder={t('noteHint', lang)}
                             className="w-full h-8 rounded-lg border px-2.5 text-xs font-medium focus:outline-none"
-                            style={{ background: '#F5F5F0', borderColor: '#E7E5E4', color: '#1C1917' }}
-                            onFocus={e => e.target.style.borderColor = '#F59E0B'}
-                            onBlur={e => e.target.style.borderColor = '#E7E5E4'}
+                            style={{ background: 'var(--surface-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                            onFocus={e => e.target.style.borderColor = 'var(--amber)'}
+                            onBlur={e => e.target.style.borderColor = 'var(--border)'}
                           />
                         ) : (
                           <button
@@ -202,11 +202,11 @@ export default function CheckoutModal() {
             })}
 
             {/* Total row inside receipt */}
-            <div className="px-4 flex flex-col" style={{ background: '#FFFBEB', borderTop: '2px dashed #F59E0B' }}>
+            <div className="px-4 flex flex-col" style={{ background: 'var(--amber-bg)', borderTop: '2px dashed var(--amber)' }}>
               {discountAmount > 0 && (
                 <div className="flex items-center justify-between pt-2">
                   <p className="text-xs text-muted">{t('discount', lang)}</p>
-                  <p className="font-mono text-sm font-semibold" style={{ color: '#16A34A' }}>
+                  <p className="font-mono text-sm font-semibold" style={{ color: 'var(--green)' }}>
                     -{discountType === 'percent' ? `${rawDiscount}%` : ''} ₱{discountAmount.toFixed(2)}
                   </p>
                 </div>
@@ -241,8 +241,8 @@ export default function CheckoutModal() {
                     onClick={() => setDiscountType(type)}
                     className="h-10 px-3.5 text-sm font-bold transition-colors"
                     style={discountType === type
-                      ? { background: '#F59E0B', color: '#fff' }
-                      : { background: '#fff', color: '#78716C' }}
+                      ? { background: 'var(--amber)', color: '#fff' }
+                      : { background: 'var(--surface)', color: 'var(--text-muted)' }}
                   >
                     {type === 'flat' ? '₱' : '%'}
                   </button>
@@ -256,7 +256,7 @@ export default function CheckoutModal() {
                 placeholder="0"
                 autoFocus
                 className="flex-1 h-10 rounded-lg border border-border px-3 text-sm font-mono font-semibold focus:outline-none bg-surface"
-                style={{ borderColor: discountInput ? '#F59E0B' : '#E7E5E4' }}
+                style={{ borderColor: discountInput ? 'var(--amber)' : 'var(--border)' }}
               />
               <button
                 onClick={() => { setShowDiscount(false); setDiscountInput('') }}
@@ -273,8 +273,8 @@ export default function CheckoutModal() {
                 onClick={() => setMethod(key)}
                 className="h-14 rounded-[14px] border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
                 style={method === key
-                  ? { borderColor: '#F59E0B', background: '#FFFBEB', color: '#D97706' }
-                  : { borderColor: '#E7E5E4', background: '#fff', color: '#78716C' }}
+                  ? { borderColor: 'var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber-dark)' }
+                  : { borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-muted)' }}
               >
                 <span className="text-base">{icon}</span>
                 <span>{t(labelKey, lang)}</span>
@@ -294,17 +294,17 @@ export default function CheckoutModal() {
                   onChange={e => setCashGiven(e.target.value)}
                   placeholder={t('amountReceived', lang)}
                   className="w-full h-14 rounded-[14px] border-2 pl-9 pr-4 font-mono text-2xl font-semibold focus:outline-none transition-colors"
-                  style={{ borderColor: cashGiven ? '#F59E0B' : '#E7E5E4', background: '#fff', color: '#1C1917' }}
+                  style={{ borderColor: cashGiven ? 'var(--amber)' : 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
                 />
               </div>
               {parseFloat(cashGiven || 0) >= discountedTotal && parseFloat(cashGiven || 0) > 0 && (
                 <div className="flex items-center justify-between px-4 py-3 rounded-[14px]"
-                  style={{ background: '#DCFCE7', border: '1.5px solid #16A34A' }}>
+                  style={{ background: 'var(--green-light)', border: '1.5px solid var(--green)' }}>
                   <div className="flex items-center gap-2">
                     <span className="text-base">💰</span>
-                    <p className="text-sm font-bold uppercase tracking-wide" style={{ color: '#16A34A' }}>{t('change', lang)}</p>
+                    <p className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--green)' }}>{t('change', lang)}</p>
                   </div>
-                  <p className="font-mono text-2xl font-bold" style={{ color: '#16A34A' }}>₱{change.toFixed(2)}</p>
+                  <p className="font-mono text-2xl font-bold" style={{ color: 'var(--green)' }}>₱{change.toFixed(2)}</p>
                 </div>
               )}
               {denominations.length > 0 && (
@@ -315,8 +315,8 @@ export default function CheckoutModal() {
                       onClick={() => setCashGiven(String(v))}
                       className="flex-shrink-0 h-11 px-4 rounded-[12px] text-sm font-bold border-2 transition-all active:scale-95"
                       style={cashGiven === String(v)
-                        ? { background: '#F59E0B', color: '#fff', borderColor: '#F59E0B' }
-                        : { background: '#fff', color: '#78716C', borderColor: '#E7E5E4' }}
+                        ? { background: 'var(--amber)', color: '#fff', borderColor: 'var(--amber)' }
+                        : { background: 'var(--surface)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}
                     >
                       ₱{v}
                     </button>
@@ -328,14 +328,14 @@ export default function CheckoutModal() {
         </div>
 
         {/* ── Confirm CTA ── */}
-        <div className="px-4 pt-2 sheet-pb flex-shrink-0" style={{ borderTop: '1px solid #E7E5E4', background: '#FAFAF7' }}>
+        <div className="px-4 pt-2 sheet-pb flex-shrink-0" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
           <button
             onClick={handleConfirm}
             disabled={!canConfirm}
             className="w-full h-[60px] rounded-[16px] font-extrabold text-base tracking-wide transition-all active:scale-[0.98]"
             style={canConfirm
-              ? { background: '#F59E0B', color: '#fff', boxShadow: '0 4px 20px rgba(245,158,11,0.4)' }
-              : { background: '#E7E5E4', color: '#A8A29E', cursor: 'not-allowed' }}
+              ? { background: 'var(--amber)', color: '#fff', boxShadow: '0 4px 20px rgba(245,158,11,0.4)' }
+              : { background: 'var(--border)', color: 'var(--text-faint)', cursor: 'not-allowed' }}
           >
             {method === 'gcash'
               ? `${t('gcashQR', lang)} →`

@@ -15,10 +15,10 @@ export default function ReceiptModal() {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-bg overflow-y-auto">
       {/* Success header */}
-      <div className="flex flex-col items-center pt-10 pb-6 px-4" style={{ background: '#FFFBEB' }}>
+      <div className="flex flex-col items-center pt-10 pb-6 px-4" style={{ background: 'var(--amber-bg)' }}>
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
-          style={{ background: '#F59E0B', boxShadow: '0 4px 24px rgba(245,158,11,0.35)' }}
+          style={{ background: 'var(--amber)', boxShadow: '0 4px 24px rgba(245,158,11,0.35)' }}
         >
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
             <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -34,7 +34,7 @@ export default function ReceiptModal() {
 
       {/* Receipt body */}
       <div className="flex-1 px-4 py-4 flex flex-col gap-0 w-full max-w-md mx-auto">
-        <div className="bg-surface rounded-[18px] overflow-hidden" style={{ border: '1px solid #E7E5E4' }}>
+        <div className="bg-surface rounded-[18px] overflow-hidden" style={{ border: '1px solid var(--border)' }}>
 
           {/* Store name + ref */}
           <div className="px-4 py-4 flex flex-col items-center border-b border-dashed border-border">
@@ -73,11 +73,11 @@ export default function ReceiptModal() {
           </div>
 
           {/* Totals */}
-          <div className="px-4 py-3 flex flex-col gap-1.5" style={{ background: '#FFFBEB', borderTop: '2px dashed #F59E0B' }}>
+          <div className="px-4 py-3 flex flex-col gap-1.5" style={{ background: 'var(--amber-bg)', borderTop: '2px dashed var(--amber)' }}>
             {discount?.amount > 0 && (
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted">{isFil ? 'Diskwento' : 'Discount'}</p>
-                <p className="font-mono text-sm font-semibold" style={{ color: '#16A34A' }}>
+                <p className="font-mono text-sm font-semibold" style={{ color: 'var(--green)' }}>
                   -₱{discount.amount.toFixed(2)}
                 </p>
               </div>
@@ -95,10 +95,10 @@ export default function ReceiptModal() {
                   <p className="font-mono text-sm text-text">₱{parseFloat(cashGiven).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold" style={{ color: '#16A34A' }}>
+                  <p className="text-xs font-bold" style={{ color: 'var(--green)' }}>
                     {isFil ? 'Sukli' : 'Change'}
                   </p>
-                  <p className="font-mono text-lg font-bold" style={{ color: '#16A34A' }}>
+                  <p className="font-mono text-lg font-bold" style={{ color: 'var(--green)' }}>
                     ₱{parseFloat(change || 0).toFixed(2)}
                   </p>
                 </div>
@@ -120,7 +120,7 @@ export default function ReceiptModal() {
         <button
           onClick={handleDone}
           className="w-full h-[56px] rounded-[16px] font-extrabold text-base tracking-wide text-white"
-          style={{ background: '#F59E0B', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}
+          style={{ background: 'var(--amber)', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}
         >
           {isFil ? 'Tapos na' : 'Done'}
         </button>

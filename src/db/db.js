@@ -1,7 +1,7 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'tindapos'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 export async function getDB() {
   return openDB(DB_NAME, DB_VERSION, {
@@ -19,6 +19,10 @@ export async function getDB() {
       }
       if (oldVersion < 3) {
         db.createObjectStore('shifts', { keyPath: 'id', autoIncrement: true })
+      }
+      if (oldVersion < 4) {
+        const expenseStore = db.createObjectStore('expenses', { keyPath: 'id', autoIncrement: true })
+        expenseStore.createIndex('date', 'date')
       }
     },
   })
@@ -122,6 +126,53 @@ export async function getMonthlySales() {
   const from = new Date(now.getFullYear(), now.getMonth(), 1)
   const to = new Date()
   return getSalesByRange(from, to)
+}
+
+// Expenses (gastos)
+export async function addExpense(expense) {
+  const db = await getDB()
+  const record = {
+    name: expense.name || '',
+    amount: parseFloat(expense.amount) || 0,
+    date: new Date().toISOString(),
+  }
+  const id = await db.add('expenses', record)
+  return { ...record, id }
+}
+
+export async function deleteExpense(id) {
+  const db = await getDB()
+  return db.delete('expenses', id)
+}
+
+export async function getExpensesByRange(from, to) {
+  const db = await getDB()
+  const all = await db.getAll('expenses')
+  return all.filter(e => {
+    const d = new Date(e.date)
+    return d >= from && d <= to
+  })
+}
+
+export async function getTodayExpenses() {
+  const db = await getDB()
+  const all = await db.getAll('expenses')
+  const today = new Date().toDateString()
+  return all.filter(e => new Date(e.date).toDateString() === today)
+}
+
+export async function getWeeklyExpenses() {
+  const now = new Date()
+  const from = new Date(now)
+  from.setDate(now.getDate() - now.getDay())
+  from.setHours(0, 0, 0, 0)
+  return getExpensesByRange(from, new Date())
+}
+
+export async function getMonthlyExpenses() {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), now.getMonth(), 1)
+  return getExpensesByRange(from, new Date())
 }
 
 // Shifts

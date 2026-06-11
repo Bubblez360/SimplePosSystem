@@ -93,6 +93,14 @@ export const useStore = create((set, get) => ({
     localStorage.setItem('bigText', v ? '1' : '0')
     set({ bigText: v })
   },
+  theme: localStorage.getItem('theme') || 'light',
+  setTheme: (theme) => {
+    localStorage.setItem('theme', theme)
+    document.documentElement.setAttribute('data-theme', theme)
+    set({ theme })
+  },
+  logo: null,
+  setLogo: (logo) => set({ logo }),
 }))
 
 // Parse cart key into itemId + optional variantIdx

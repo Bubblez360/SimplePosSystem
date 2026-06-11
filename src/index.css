@@ -6,6 +6,7 @@
   --amber:       #F59E0B;
   --amber-dark:  #D97706;
   --amber-light: #FEF3C7;
+  --amber-bg:    #FFFBEB;
   --green:       #16A34A;
   --green-light: #DCFCE7;
   --bg:          #FAFAF7;
@@ -16,6 +17,23 @@
   --text-muted:  #78716C;
   --text-faint:  #A8A29E;
   --error:       #EF4444;
+}
+
+[data-theme="dark"] {
+  --amber:       #FBBF24;
+  --amber-dark:  #F59E0B;
+  --amber-light: #2D2507;
+  --amber-bg:    #261F06;
+  --green:       #22C55E;
+  --green-light: #052E12;
+  --bg:          #1C1917;
+  --surface:     #292524;
+  --surface-2:   #3D3835;
+  --border:      #3D3835;
+  --text:        #FAFAF7;
+  --text-muted:  #A8A29E;
+  --text-faint:  #78716C;
+  --error:       #F87171;
 }
 
 * {

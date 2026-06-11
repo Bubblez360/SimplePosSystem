@@ -22,7 +22,7 @@ const SCREENS = {
 }
 
 export default function App() {
-  const { screen, setItems, setCategories, setGcashQR, checkoutOpen, gcashOpen, variantPickerItem, receiptOpen, shiftModalOpen } = useStore()
+  const { screen, setItems, setCategories, setGcashQR, setLogo, theme, checkoutOpen, gcashOpen, variantPickerItem, receiptOpen, shiftModalOpen } = useStore()
 
   useEffect(() => {
     seedDefaultData().then(() => {
@@ -30,7 +30,12 @@ export default function App() {
       getAllCategories().then(setCategories)
     })
     getSetting('gcashQR').then(qr => { if (qr) setGcashQR(qr) })
+    getSetting('logo').then(logo => { if (logo) setLogo(logo) })
   }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   const Screen = SCREENS[screen] || BentaScreen
 

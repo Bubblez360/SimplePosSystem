@@ -51,7 +51,7 @@ export default function ShiftModal() {
           <button
             onClick={() => setShiftModalOpen(false)}
             className="w-9 h-9 rounded-full flex items-center justify-center text-muted text-lg"
-            style={{ background: '#F5F5F0' }}
+            style={{ background: 'var(--surface-2)' }}
           >×</button>
         </div>
 
@@ -63,7 +63,7 @@ export default function ShiftModal() {
               <div className="bg-amber-light border border-amber rounded-card p-4">
                 <p className="text-xs font-bold text-amber-dark uppercase tracking-wide mb-2">{t('shiftSummary', lang)}</p>
                 <p className="font-mono text-3xl font-medium text-amber-dark">₱{summary.totalSales?.toFixed(2)}</p>
-                <p className="text-xs text-amber-dark/70 mt-1">{summary.transactionCount} {t('transactions', lang)}</p>
+                <p className="text-xs text-amber-dark opacity-70 mt-1">{summary.transactionCount} {t('transactions', lang)}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -91,7 +91,7 @@ export default function ShiftModal() {
               <button
                 onClick={() => setShiftModalOpen(false)}
                 className="w-full h-[56px] rounded-[16px] font-extrabold text-base"
-                style={{ background: '#F59E0B', color: '#fff' }}
+                style={{ background: 'var(--amber)', color: '#fff' }}
               >
                 OK
               </button>
@@ -113,7 +113,7 @@ export default function ShiftModal() {
                 onClick={handleClose}
                 disabled={loading}
                 className="w-full h-[56px] rounded-[16px] font-extrabold text-base"
-                style={{ background: loading ? '#E7E5E4' : '#EF4444', color: loading ? '#A8A29E' : '#fff' }}
+                style={{ background: loading ? 'var(--border)' : 'var(--error)', color: loading ? 'var(--text-faint)' : '#fff' }}
               >
                 {loading ? '...' : t('closeShift', lang)}
               </button>
@@ -134,7 +134,7 @@ export default function ShiftModal() {
                     onChange={e => setFloatInput(e.target.value)}
                     placeholder="0"
                     className="w-full h-14 rounded-[14px] border-2 pl-9 pr-4 font-mono text-2xl font-semibold focus:outline-none transition-colors"
-                    style={{ borderColor: floatInput ? '#F59E0B' : '#E7E5E4', background: '#fff', color: '#1C1917' }}
+                    style={{ borderColor: floatInput ? 'var(--amber)' : 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
                   />
                 </div>
                 <p className="text-xs text-muted mt-1.5">
@@ -146,7 +146,7 @@ export default function ShiftModal() {
                 onClick={handleOpen}
                 disabled={loading}
                 className="w-full h-[56px] rounded-[16px] font-extrabold text-base"
-                style={{ background: loading ? '#E7E5E4' : '#F59E0B', color: loading ? '#A8A29E' : '#fff',
+                style={{ background: loading ? 'var(--border)' : 'var(--amber)', color: loading ? 'var(--text-faint)' : '#fff',
                   boxShadow: loading ? 'none' : '0 4px 20px rgba(245,158,11,0.4)' }}
               >
                 {loading ? '...' : t('openShift', lang)}

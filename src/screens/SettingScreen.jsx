@@ -9,7 +9,7 @@ import { t } from '../i18n'
 const CAT_EMOJIS = ['🍱','🍗','🥤','☕','🍵','🧋','🍔','🍕','🌮','🍜','🥗','🍰','🍦','🍩','🧁','🥞','🍖','🥪','🍲','🥘']
 
 export default function SettingScreen() {
-  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected, currentShift, setShiftModalOpen } = useStore()
+  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected, currentShift, setShiftModalOpen, logo, setLogo, theme, setTheme } = useStore()
   const [nameInput, setNameInput] = useState(businessName)
   const [newCatName, setNewCatName] = useState('')
   const [newCatEmoji, setNewCatEmoji] = useState('🍱')
@@ -63,6 +63,38 @@ export default function SettingScreen() {
     await setSetting('gcashQR', data)
     setQrCropSrc(null)
     showToast(lang === 'fil' ? 'GCash QR na-save!' : 'GCash QR saved!')
+  }
+
+  function handleLogoUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const img = new Image()
+      img.onload = async () => {
+        // Center-crop to square, downscale to 256px
+        const size = Math.min(img.width, img.height)
+        const sx = (img.width - size) / 2
+        const sy = (img.height - size) / 2
+        const canvas = document.createElement('canvas')
+        canvas.width = 256
+        canvas.height = 256
+        canvas.getContext('2d').drawImage(img, sx, sy, size, size, 0, 0, 256, 256)
+        const data = canvas.toDataURL('image/jpeg', 0.9)
+        setLogo(data)
+        await setSetting('logo', data)
+        showToast(lang === 'fil' ? 'Logo na-save!' : 'Logo saved!')
+      }
+      img.src = ev.target.result
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  async function handleRemoveLogo() {
+    setLogo(null)
+    await setSetting('logo', null)
+    showToast(lang === 'fil' ? 'Logo tinanggal!' : 'Logo removed!')
   }
 
   function handleNameSave() {
@@ -139,6 +171,31 @@ export default function SettingScreen() {
               {t('save', lang)}
             </button>
           </div>
+        </section>
+
+        {/* Store logo */}
+        <section>
+          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">{t('storeLogo', lang)}</p>
+          {logo ? (
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="logo" className="w-16 h-16 rounded-card border border-border object-cover" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-amber underline cursor-pointer">
+                  {t('uploadLogo', lang)}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                </label>
+                <button onClick={handleRemoveLogo} className="text-xs font-bold text-error text-left">
+                  {t('removeLogo', lang)}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className="flex items-center justify-center gap-2 h-12 rounded-card border-2 border-dashed border-border bg-surface-2 cursor-pointer">
+              <span className="text-lg">🏪</span>
+              <span className="text-sm font-semibold text-muted">{t('uploadLogo', lang)}</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            </label>
+          )}
         </section>
 
         {/* Categories */}
@@ -264,7 +321,7 @@ export default function SettingScreen() {
             <div className="flex items-center justify-between px-3 py-3 bg-amber-light border border-amber rounded-card">
               <div>
                 <p className="text-sm font-bold text-amber-dark">{t('shiftOpen', lang)}</p>
-                <p className="text-xs text-amber-dark/70 mt-0.5">
+                <p className="text-xs text-amber-dark opacity-70 mt-0.5">
                   {new Date(currentShift.openedAt).toLocaleString(lang === 'fil' ? 'fil-PH' : 'en-PH', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -283,6 +340,26 @@ export default function SettingScreen() {
               <span>⏱️</span> {t('openShift', lang)}
             </button>
           )}
+        </section>
+
+        {/* Theme */}
+        <section>
+          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">{t('theme', lang)}</p>
+          <div className="flex gap-2">
+            {[['light', `☀️ ${t('lightMode', lang)}`], ['dark', `🌙 ${t('darkMode', lang)}`]].map(([code, label]) => (
+              <button
+                key={code}
+                onClick={() => setTheme(code)}
+                className={`flex-1 h-12 rounded-btn border font-bold text-sm transition-all ${
+                  theme === code
+                    ? 'border-amber bg-amber-light text-amber-dark'
+                    : 'border-border bg-surface text-muted'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </section>
 
         {/* Language */}

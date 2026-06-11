@@ -114,6 +114,24 @@ const strings = {
     // PWA
     installApp: 'I-install ang App',
     installHint: 'I-add sa Home Screen para mas madaling gamitin',
+    // Gastos
+    gastos: 'Gastos',
+    addGastos: 'I-dagdag',
+    gastosName: 'Para saan? (hal. yelo, plastik)',
+    gastosAmount: 'Magkano',
+    noGastos: 'Walang gastos.',
+    kita: 'Kita',
+    benta2: 'Benta',
+    // Search
+    searchItems: 'Hanapin ang item...',
+    // Logo
+    storeLogo: 'Logo ng Tindahan',
+    uploadLogo: 'Mag-upload ng Logo',
+    removeLogo: 'Tanggalin',
+    // Theme
+    theme: 'Tema',
+    lightMode: 'Maliwanag',
+    darkMode: 'Madilim',
   },
   eng: {
     appName: 'TindaPOS',
@@ -230,6 +248,24 @@ const strings = {
     // PWA
     installApp: 'Install App',
     installHint: 'Add to Home Screen for quick access',
+    // Gastos
+    gastos: 'Expenses',
+    addGastos: 'Add',
+    gastosName: 'What for? (e.g. ice, plastic)',
+    gastosAmount: 'Amount',
+    noGastos: 'No expenses yet.',
+    kita: 'Profit',
+    benta2: 'Sales',
+    // Search
+    searchItems: 'Search items...',
+    // Logo
+    storeLogo: 'Store Logo',
+    uploadLogo: 'Upload Logo',
+    removeLogo: 'Remove',
+    // Theme
+    theme: 'Theme',
+    lightMode: 'Light',
+    darkMode: 'Dark',
   },
 }
 

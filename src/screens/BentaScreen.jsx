@@ -3,12 +3,17 @@ import { useStore, itemTotalQty } from '../store/useStore'
 import { t } from '../i18n'
 
 export default function BentaScreen() {
-  const { items, categories, cart, addToCart, removeFromCart, setVariantPickerItem, lang, businessName } = useStore()
+  const { items, categories, cart, addToCart, removeFromCart, setVariantPickerItem, lang, businessName, logo } = useStore()
   const [activeCat, setActiveCat] = useState('all')
+  const [search, setSearch] = useState('')
 
-  const filtered = activeCat === 'all'
+  const byCategory = activeCat === 'all'
     ? items
     : items.filter(i => String(i.categoryId) === String(activeCat))
+  const query = search.trim().toLowerCase()
+  const filtered = query
+    ? byCategory.filter(i => i.name.toLowerCase().includes(query))
+    : byCategory
 
   function handleItemTap(item) {
     if (item.variants?.length) {
@@ -30,10 +35,34 @@ export default function BentaScreen() {
   return (
     <div className="screen-enter">
       <header className="sticky top-0 bg-surface border-b border-border px-4 py-3 z-10">
-        <p className="text-xs font-bold text-muted uppercase tracking-widest">
-          {businessName || t('appName', lang)}
-        </p>
-        <p className="text-lg font-extrabold text-text leading-tight">{t('benta', lang)}</p>
+        <div className="flex items-center gap-3">
+          {logo && (
+            <img src={logo} alt="logo" className="w-9 h-9 rounded-lg object-cover flex-shrink-0 border border-border" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-muted uppercase tracking-widest truncate">
+              {businessName || t('appName', lang)}
+            </p>
+            <p className="text-lg font-extrabold text-text leading-tight">{t('benta', lang)}</p>
+          </div>
+        </div>
+        {items.length > 6 && (
+          <div className="relative mt-2">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-faint">🔍</span>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={t('searchItems', lang)}
+              className="w-full h-10 rounded-lg border border-border pl-9 pr-8 text-sm font-medium bg-surface-2 focus:outline-none focus:border-amber text-text"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-faint text-base"
+              >×</button>
+            )}
+          </div>
+        )}
       </header>
 
       {/* Category filter tabs */}
@@ -127,7 +156,7 @@ export default function BentaScreen() {
                   )}
 
                   {hasVariants && !isOutOfStock && (
-                    <div className="absolute top-2 right-2 bg-surface/80 rounded px-1 py-0.5">
+                    <div className="absolute top-2 right-2 bg-surface rounded px-1 py-0.5">
                       <span className="text-[9px] font-bold text-muted uppercase">sizes</span>
                     </div>
                   )}
