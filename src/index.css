@@ -28,11 +28,32 @@ html, body, #root {
   overscroll-behavior: none;
 }
 
+html {
+  /* Remove double-tap zoom + tap delay on mobile */
+  touch-action: manipulation;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Plus Jakarta Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* iPhone notch / Android punch-hole */
+  padding-top: env(safe-area-inset-top, 0px);
+  /* Prevent long-press text selection on UI (Android) */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+img {
+  /* Prevent long-press "save image" popup on item photos (iOS) */
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 .font-mono {
@@ -43,6 +64,14 @@ body {
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Sits above the bottom nav, respecting iPhone home indicator */
+  .above-nav {
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+  /* Bottom padding for sheet CTAs clear of home indicator */
+  .sheet-pb {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 

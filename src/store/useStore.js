@@ -88,6 +88,11 @@ export const useStore = create((set, get) => ({
     localStorage.setItem('businessName', name)
     set({ businessName: name })
   },
+  bigText: localStorage.getItem('bigText') === '1',
+  setBigText: (v) => {
+    localStorage.setItem('bigText', v ? '1' : '0')
+    set({ bigText: v })
+  },
 }))
 
 // Parse cart key into itemId + optional variantIdx

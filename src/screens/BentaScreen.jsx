@@ -42,7 +42,7 @@ export default function BentaScreen() {
         <div className="flex gap-2 px-3 pt-3 pb-1 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveCat('all')}
-            className={`flex-shrink-0 h-8 px-3 rounded-pill text-xs font-bold border transition-all ${
+            className={`flex-shrink-0 h-9 px-3.5 rounded-pill text-xs font-bold border transition-all ${
               activeCat === 'all'
                 ? 'bg-amber text-white border-amber'
                 : 'bg-surface border-border text-muted'
@@ -54,7 +54,7 @@ export default function BentaScreen() {
             <button
               key={cat.id}
               onClick={() => setActiveCat(cat.id)}
-              className={`flex-shrink-0 h-8 px-3 rounded-pill text-xs font-bold border transition-all ${
+              className={`flex-shrink-0 h-9 px-3.5 rounded-pill text-xs font-bold border transition-all ${
                 activeCat === cat.id
                   ? 'bg-amber text-white border-amber'
                   : 'bg-surface border-border text-muted'
@@ -76,7 +76,7 @@ export default function BentaScreen() {
             <p className="text-faint text-xs">{t('goToMenu', lang)}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {filtered.map(item => {
               const qty = itemTotalQty(cart, item.id)
               const active = qty > 0
@@ -109,18 +109,18 @@ export default function BentaScreen() {
                       <p className="font-mono text-sm font-medium text-amber-dark">{displayPrice}</p>
                     </div>
                     <button
-                      onClick={e => { e.stopPropagation(); handleItemTap(item) }}
-                      className="flex-shrink-0 w-7 h-7 rounded-full bg-amber text-white text-base font-bold flex items-center justify-center leading-none"
+                      onClick={e => { e.stopPropagation(); if (!isOutOfStock) handleItemTap(item) }}
+                      className="flex-shrink-0 w-9 h-9 -m-1 rounded-full bg-amber text-white text-lg font-bold flex items-center justify-center leading-none"
                     >
                       +
                     </button>
                   </div>
 
                   {qty > 0 && (
-                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-amber text-white rounded-full px-2 py-0.5">
+                    <div className="absolute top-1.5 left-1.5 flex items-center bg-amber text-white rounded-full pr-2.5">
                       <button
                         onClick={e => handleMinus(e, item)}
-                        className="text-xs font-bold leading-none"
+                        className="w-7 h-7 flex items-center justify-center text-sm font-bold leading-none"
                       >−</button>
                       <span className="text-xs font-bold font-mono">{qty}</span>
                     </div>

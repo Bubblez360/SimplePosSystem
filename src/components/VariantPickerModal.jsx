@@ -13,7 +13,7 @@ export default function VariantPickerModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/60" onClick={() => setVariantPickerItem(null)}>
-      <div className="mt-auto bg-bg rounded-t-[20px] overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="mt-auto bg-bg rounded-t-[20px] overflow-hidden w-full max-w-2xl mx-auto" onClick={e => e.stopPropagation()}>
         <div className="bg-surface px-4 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">{item.photo
@@ -24,10 +24,10 @@ export default function VariantPickerModal() {
               <p className="text-xs text-muted">{t('chooseVariant', lang)}</p>
             </div>
           </div>
-          <button onClick={() => setVariantPickerItem(null)} className="text-muted text-2xl leading-none">×</button>
+          <button onClick={() => setVariantPickerItem(null)} className="w-10 h-10 -m-2 flex items-center justify-center text-muted text-2xl leading-none">×</button>
         </div>
 
-        <div className="px-4 py-3 flex flex-col gap-2 pb-6">
+        <div className="px-4 py-3 flex flex-col gap-2 sheet-pb">
           {item.variants.map((v, idx) => (
             <button
               key={idx}
