@@ -418,6 +418,19 @@ export default function SettingScreen() {
 
         {/* ── SISTEMA TAB ── */}
         {settingsTab === 'system' && <>
+        {/* User Guide */}
+        <section>
+          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">📖 {lang === 'fil' ? 'User Guide' : 'User Guide'}</p>
+          <a
+            href="https://kingnoob3605.github.io/SimplePosSystem/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full h-12 rounded-btn bg-amber-light border border-amber text-amber-dark font-bold text-sm flex items-center justify-center gap-2"
+          >
+            <span>📖</span> {lang === 'fil' ? 'Buksan ang User Guide' : 'Open User Guide'}
+          </a>
+        </section>
+
         <section>
           <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">🖨️ Receipt Printer</p>
           {!printerSupported() ? (
