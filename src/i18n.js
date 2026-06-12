@@ -93,7 +93,7 @@ const strings = {
     exportCSV: 'I-export CSV',
     periodToday: 'Ngayon',
     periodWeek: 'Linggo',
-    periodMonth: 'Buwan',
+    periodMonth: 'Taon',
     weeklySales: 'Benta Ngayong Linggo',
     monthlySales: 'Benta Ngayong Buwan',
     // Stock
@@ -132,6 +132,16 @@ const strings = {
     theme: 'Tema',
     lightMode: 'Maliwanag',
     darkMode: 'Madilim',
+    // Backup
+    backupRestore: 'Backup at Restore',
+    exportBackup: 'I-export Backup',
+    importBackup: 'I-import Backup',
+    exportHint: 'I-save ang lahat ng data bilang JSON file',
+    importHint: 'I-restore mula sa backup file',
+    importConfirm: 'Papalitan nito ang lahat ng data. Sigurado ka ba?',
+    backupSuccess: 'Backup na-export!',
+    restoreSuccess: 'Data na-restore! I-refresh ang app.',
+    restoreError: 'Hindi valid ang backup file.',
   },
   eng: {
     appName: 'TindaPOS',
@@ -266,6 +276,16 @@ const strings = {
     theme: 'Theme',
     lightMode: 'Light',
     darkMode: 'Dark',
+    // Backup
+    backupRestore: 'Backup & Restore',
+    exportBackup: 'Export Backup',
+    importBackup: 'Import Backup',
+    exportHint: 'Save all data as a JSON file',
+    importHint: 'Restore from a backup file',
+    importConfirm: 'This will replace all current data. Are you sure?',
+    backupSuccess: 'Backup exported!',
+    restoreSuccess: 'Data restored! Please refresh the app.',
+    restoreError: 'Invalid backup file.',
   },
 }
 

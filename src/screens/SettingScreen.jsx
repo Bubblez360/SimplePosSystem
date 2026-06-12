@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { useStore } from '../store/useStore'
-import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory } from '../db/db'
+import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory, exportAllData, importAllData } from '../db/db'
 import { connectPrinter, disconnectPrinter, isSupported as printerSupported } from '../utils/printer'
 import { t } from '../i18n'
 
@@ -15,6 +15,12 @@ export default function SettingScreen() {
   const [newCatEmoji, setNewCatEmoji] = useState('🍱')
   const [showCatEmoji, setShowCatEmoji] = useState(false)
   const [toast, setToast] = useState(null)
+  const [restoring, setRestoring] = useState(false)
+  const [settingsTab, setSettingsTab] = useState('store')
+  const [editingCatId, setEditingCatId] = useState(null)
+  const [editingCatName, setEditingCatName] = useState('')
+  const [editingCatEmoji, setEditingCatEmoji] = useState('🍱')
+  const [showEditEmoji, setShowEditEmoji] = useState(false)
   const [qrCropSrc, setQrCropSrc] = useState(null)
   const [qrCrop, setQrCrop] = useState()
   const [qrCompletedCrop, setQrCompletedCrop] = useState(null)
@@ -97,6 +103,45 @@ export default function SettingScreen() {
     showToast(lang === 'fil' ? 'Logo tinanggal!' : 'Logo removed!')
   }
 
+  async function handleExportBackup() {
+    try {
+      const data = await exportAllData()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const date = new Date().toISOString().slice(0, 10)
+      a.href = url
+      a.download = `tindapos-backup-${date}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      showToast(t('backupSuccess', lang))
+    } catch {
+      showToast(lang === 'fil' ? 'Hindi ma-export ang backup.' : 'Export failed.')
+    }
+  }
+
+  async function handleImportBackup(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!window.confirm(t('importConfirm', lang))) {
+      e.target.value = ''
+      return
+    }
+    setRestoring(true)
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      await importAllData(data)
+      showToast(t('restoreSuccess', lang))
+      setTimeout(() => window.location.reload(), 1500)
+    } catch {
+      showToast(t('restoreError', lang))
+    } finally {
+      setRestoring(false)
+      e.target.value = ''
+    }
+  }
+
   function handleNameSave() {
     const trimmed = nameInput.trim()
     if (!trimmed) return
@@ -119,7 +164,18 @@ export default function SettingScreen() {
     await deleteCategory(id)
     const updated = await getAllCategories()
     setCategories(updated)
+    if (editingCatId === id) setEditingCatId(null)
     showToast(lang === 'fil' ? 'Category nabura!' : 'Category deleted!')
+  }
+
+  async function handleSaveCategory() {
+    if (!editingCatName.trim()) return
+    await saveCategory({ id: editingCatId, name: editingCatName.trim(), emoji: editingCatEmoji })
+    const updated = await getAllCategories()
+    setCategories(updated)
+    setEditingCatId(null)
+    setShowEditEmoji(false)
+    showToast(lang === 'fil' ? 'Category na-update!' : 'Category updated!')
   }
 
   if (qrCropSrc) {
@@ -151,12 +207,28 @@ export default function SettingScreen() {
         </div>
       )}
 
-      <header className="sticky top-0 bg-surface border-b border-border px-4 py-3 z-10">
-        <p className="text-lg font-extrabold text-text">{t('setting', lang)}</p>
+      <header className="sticky top-0 bg-surface border-b border-border px-4 pt-3 pb-0 z-10">
+        <p className="text-lg font-extrabold text-text mb-3">{t('setting', lang)}</p>
+        <div className="flex gap-0">
+          {[['store', '🏪 ' + (lang === 'fil' ? 'Tindahan' : 'Store')], ['system', '⚙️ ' + (lang === 'fil' ? 'Sistema' : 'System')]].map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setSettingsTab(tab)}
+              className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all ${
+                settingsTab === tab
+                  ? 'border-amber text-amber'
+                  : 'border-transparent text-muted'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="p-4 flex flex-col gap-6">
-        {/* Business name */}
+        {/* ── TINDAHAN TAB ── */}
+        {settingsTab === 'store' && <>
         <section>
           <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">{t('businessName', lang)}</p>
           <div className="flex gap-2">
@@ -205,17 +277,79 @@ export default function SettingScreen() {
           {categories.length > 0 && (
             <div className="flex flex-col gap-1 mb-3">
               {categories.map(cat => (
-                <div key={cat.id} className="flex items-center justify-between px-3 py-2.5 bg-surface border border-border rounded-card">
-                  <span className="text-sm font-semibold text-text">
-                    {cat.emoji && <span className="mr-1">{cat.emoji}</span>}{cat.name}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteCategory(cat.id)}
-                    className="text-error text-xs font-bold px-2 py-1"
-                  >
-                    {t('delete', lang)}
-                  </button>
-                </div>
+                editingCatId === cat.id ? (
+                  <div key={cat.id} className="flex flex-col gap-2 px-3 py-2.5 bg-surface border border-amber rounded-card">
+                    <div className="flex gap-2 items-center">
+                      <button
+                        onClick={() => setShowEditEmoji(v => !v)}
+                        className="w-10 h-10 rounded-lg border border-border bg-surface-2 text-xl flex items-center justify-center flex-shrink-0"
+                      >
+                        {editingCatEmoji}
+                      </button>
+                      <input
+                        autoFocus
+                        value={editingCatName}
+                        onChange={e => setEditingCatName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveCategory(); if (e.key === 'Escape') { setEditingCatId(null); setShowEditEmoji(false) } }}
+                        className="flex-1 h-10 rounded-lg border border-border px-3 text-sm font-semibold bg-surface focus:outline-none focus:border-amber"
+                      />
+                    </div>
+                    {showEditEmoji && (
+                      <div className="grid grid-cols-10 gap-1 p-2 bg-surface-2 rounded-card border border-border">
+                        {CAT_EMOJIS.map(e => (
+                          <button
+                            key={e}
+                            onClick={() => { setEditingCatEmoji(e); setShowEditEmoji(false) }}
+                            className={`text-xl h-9 rounded flex items-center justify-center ${editingCatEmoji === e ? 'bg-amber-light' : ''}`}
+                          >
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveCategory}
+                        disabled={!editingCatName.trim()}
+                        className="flex-1 h-9 rounded-btn bg-amber text-white font-bold text-xs disabled:opacity-40"
+                      >
+                        {t('save', lang)}
+                      </button>
+                      <button
+                        onClick={() => { setEditingCatId(null); setShowEditEmoji(false) }}
+                        className="h-9 px-3 rounded-btn border border-border text-text font-bold text-xs"
+                      >
+                        {t('cancel', lang)}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="h-9 px-3 rounded-btn text-error font-bold text-xs"
+                      >
+                        {t('delete', lang)}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={cat.id} className="flex items-center justify-between px-3 py-2.5 bg-surface border border-border rounded-card">
+                    <span className="text-sm font-semibold text-text">
+                      {cat.emoji && <span className="mr-1">{cat.emoji}</span>}{cat.name}
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => { setEditingCatId(cat.id); setEditingCatName(cat.name); setEditingCatEmoji(cat.emoji || '🍱'); setShowEditEmoji(false) }}
+                        className="text-amber text-xs font-bold px-2 py-1"
+                      >
+                        {t('edit', lang)}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="text-error text-xs font-bold px-2 py-1"
+                      >
+                        {t('delete', lang)}
+                      </button>
+                    </div>
+                  </div>
+                )
               ))}
             </div>
           )}
@@ -280,8 +414,10 @@ export default function SettingScreen() {
             </label>
           )}
         </section>
+        </>}
 
-        {/* Receipt Printer */}
+        {/* ── SISTEMA TAB ── */}
+        {settingsTab === 'system' && <>
         <section>
           <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">🖨️ Receipt Printer</p>
           {!printerSupported() ? (
@@ -362,6 +498,24 @@ export default function SettingScreen() {
           </div>
         </section>
 
+        {/* Backup & Restore */}
+        <section>
+          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">💾 {t('backupRestore', lang)}</p>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleExportBackup}
+              className="w-full h-12 rounded-btn bg-surface border border-border text-sm font-bold text-text flex items-center justify-center gap-2"
+            >
+              <span>📤</span> {t('exportBackup', lang)}
+            </button>
+            <label className={`w-full h-12 rounded-btn border-2 border-dashed border-border bg-surface text-sm font-bold flex items-center justify-center gap-2 cursor-pointer ${restoring ? 'opacity-50 pointer-events-none' : 'text-muted'}`}>
+              <span>📥</span> {restoring ? (lang === 'fil' ? 'Nire-restore...' : 'Restoring...') : t('importBackup', lang)}
+              <input type="file" accept=".json" className="hidden" onChange={handleImportBackup} disabled={restoring} />
+            </label>
+          </div>
+          <p className="text-xs text-faint mt-1.5">{t('exportHint', lang)}</p>
+        </section>
+
         {/* Language */}
         <section>
           <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">{t('language', lang)}</p>
@@ -381,6 +535,7 @@ export default function SettingScreen() {
             ))}
           </div>
         </section>
+        </>}
       </div>
     </div>
   )

@@ -22,6 +22,8 @@ function getCroppedImg(imgEl, crop) {
 
 export default function MenuScreen() {
   const { items, setItems, categories, lang } = useStore()
+  const [menuCat, setMenuCat] = useState(null)
+  const [menuSearch, setMenuSearch] = useState('')
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(DEFAULT_ITEM)
   const [saving, setSaving] = useState(false)
@@ -95,6 +97,11 @@ export default function MenuScreen() {
   }
 
   async function handleDelete(id) {
+    const itemName = items.find(i => i.id === id)?.name || ''
+    const msg = lang === 'fil'
+      ? `Burahin ang "${itemName}"? Hindi na ito maibabalik.`
+      : `Delete "${itemName}"? This cannot be undone.`
+    if (!window.confirm(msg)) return
     await deleteItem(id)
     await reload()
   }
@@ -395,23 +402,76 @@ export default function MenuScreen() {
     )
   }
 
+  const catFiltered = menuCat === null
+    ? items
+    : menuCat === 'none'
+      ? items.filter(i => !i.categoryId)
+      : items.filter(i => String(i.categoryId) === String(menuCat))
+
+  const visibleItems = menuSearch.trim()
+    ? catFiltered.filter(i => i.name.toLowerCase().includes(menuSearch.toLowerCase()))
+    : catFiltered
+
   return (
     <div className="screen-enter">
-      <header className="sticky top-0 bg-surface border-b border-border px-4 py-3 z-10 flex items-center justify-between">
-        <p className="text-lg font-extrabold text-text">{t('menu', lang)}</p>
-        <button onClick={openNew} className="h-9 px-4 rounded-pill bg-amber text-white text-xs font-bold">
-          + {t('addItem', lang)}
-        </button>
+      <header className="sticky top-0 bg-surface border-b border-border z-10">
+        <div className="flex items-center justify-between px-4 py-3">
+          <p className="text-lg font-extrabold text-text">{t('menu', lang)}</p>
+          <button onClick={openNew} className="h-9 px-4 rounded-pill bg-amber text-white text-xs font-bold">
+            + {t('addItem', lang)}
+          </button>
+        </div>
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">🔍</span>
+            <input
+              value={menuSearch}
+              onChange={e => setMenuSearch(e.target.value)}
+              placeholder={t('searchItems', lang)}
+              className="w-full h-10 rounded-lg border border-border pl-8 pr-3 text-sm font-semibold bg-surface focus:outline-none focus:border-amber text-text"
+            />
+            {menuSearch && (
+              <button
+                onClick={() => setMenuSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted text-lg leading-none"
+              >×</button>
+            )}
+          </div>
+        </div>
+
+        {categories.length > 0 && (
+          <div className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setMenuCat(null)}
+              className={`flex-shrink-0 h-8 px-3 rounded-pill text-xs font-bold border transition-all ${
+                menuCat === null ? 'bg-amber text-white border-amber' : 'bg-surface border-border text-muted'
+              }`}
+            >
+              {t('allItems', lang)}
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setMenuCat(cat.id)}
+                className={`flex-shrink-0 h-8 px-3 rounded-pill text-xs font-bold border transition-all ${
+                  menuCat === cat.id ? 'bg-amber text-white border-amber' : 'bg-surface border-border text-muted'
+                }`}
+              >
+                {cat.emoji && <span className="mr-1">{cat.emoji}</span>}{cat.name}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       <div className="p-3 flex flex-col gap-2">
-        {items.length === 0 ? (
+        {visibleItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
             <span className="text-5xl">📋</span>
             <p className="text-muted text-sm">{t('noItems', lang)}</p>
           </div>
         ) : (
-          items.map(item => (
+          visibleItems.map(item => (
             <div
               key={item.id}
               onClick={() => openEdit(item)}

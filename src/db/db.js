@@ -128,6 +128,12 @@ export async function getMonthlySales() {
   return getSalesByRange(from, to)
 }
 
+export async function getYearlySales() {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), 0, 1)
+  return getSalesByRange(from, new Date())
+}
+
 // Expenses (gastos)
 export async function addExpense(expense) {
   const db = await getDB()
@@ -172,6 +178,12 @@ export async function getWeeklyExpenses() {
 export async function getMonthlyExpenses() {
   const now = new Date()
   const from = new Date(now.getFullYear(), now.getMonth(), 1)
+  return getExpensesByRange(from, new Date())
+}
+
+export async function getYearlyExpenses() {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), 0, 1)
   return getExpensesByRange(from, new Date())
 }
 
@@ -259,4 +271,53 @@ export async function getSetting(key) {
 export async function setSetting(key, value) {
   const db = await getDB()
   return db.put('settings', value, key)
+}
+
+// Backup & Restore
+export async function exportAllData() {
+  const db = await getDB()
+  const [items, categories, sales, expenses, shifts] = await Promise.all([
+    db.getAll('items'),
+    db.getAll('categories'),
+    db.getAll('sales'),
+    db.getAll('expenses'),
+    db.getAll('shifts'),
+  ])
+  const settingKeys = ['gcashQR', 'logo', 'businessName', 'lang', 'theme']
+  const settings = {}
+  for (const key of settingKeys) {
+    const val = await db.get('settings', key)
+    if (val !== undefined) settings[key] = val
+  }
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    items,
+    categories,
+    sales,
+    expenses,
+    shifts,
+    settings,
+  }
+}
+
+export async function importAllData(data) {
+  if (!data || data.version !== 1) throw new Error('Invalid backup file')
+  const db = await getDB()
+
+  const stores = ['items', 'categories', 'sales', 'expenses', 'shifts']
+  const tx = db.transaction(stores, 'readwrite')
+  for (const store of stores) await tx.objectStore(store).clear()
+  for (const item of (data.items || [])) await tx.objectStore('items').add(item)
+  for (const cat of (data.categories || [])) await tx.objectStore('categories').add(cat)
+  for (const sale of (data.sales || [])) await tx.objectStore('sales').add(sale)
+  for (const expense of (data.expenses || [])) await tx.objectStore('expenses').add(expense)
+  for (const shift of (data.shifts || [])) await tx.objectStore('shifts').add(shift)
+  await tx.done
+
+  if (data.settings) {
+    for (const [key, val] of Object.entries(data.settings)) {
+      await db.put('settings', val, key)
+    }
+  }
 }
