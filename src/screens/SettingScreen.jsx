@@ -8,9 +8,9 @@ import { validateLicense, getCachedLicense, clearLicense, retrieveLicenseByEmail
 import { pushToCloud, pullFromCloud, getLastSyncTime } from '../lib/sync'
 import { t } from '../i18n'
 
-const PAYMONGO_TRIAL_URL = 'https://buy.paymongo.com/placeholder-trial'   // TODO: ₱49 / 7-day trial link
-const PAYMONGO_MONTHLY_URL = 'https://buy.paymongo.com/placeholder-monthly' // TODO: ₱99/month link
-const PAYMONGO_ANNUAL_URL = 'https://buy.paymongo.com/placeholder-annual'  // TODO: ₱499/year link
+const PAYMONGO_TRIAL_URL = 'https://pm.link/org-sYFHfsE6iaYeziwvXQQ4fiyP/FsgQoez'
+const PAYMONGO_MONTHLY_URL = 'https://pm.link/org-sYFHfsE6iaYeziwvXQQ4fiyP/egcstXO'
+const PAYMONGO_ANNUAL_URL = 'https://pm.link/org-sYFHfsE6iaYeziwvXQQ4fiyP/OkGvZss'
 
 const CAT_EMOJIS = ['🍱','🍗','🥤','☕','🍵','🧋','🍔','🍕','🌮','🍜','🥗','🍰','🍦','🍩','🧁','🥞','🍖','🥪','🍲','🥘']
 
