@@ -566,7 +566,7 @@ export default function SettingScreen() {
                 rel="noopener noreferrer"
                 className="w-full h-12 rounded-btn bg-amber text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm"
               >
-                ⭐ {lang === 'fil' ? 'Mag-upgrade — ₱299/taon' : 'Upgrade to Premium — ₱299/year'}
+                ⭐ {lang === 'fil' ? 'Mag-upgrade — ₱49/buwan' : 'Upgrade to Premium — ₱49/month'}
               </a>
 
               <div className="flex items-center gap-2 my-0.5">
