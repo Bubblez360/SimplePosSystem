@@ -84,14 +84,18 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true, existing: true }), { status: 200 })
   }
 
-  // ₱299 annual = 29900 centavos; ₱49 monthly = 4900 centavos
-  const isAnnual = amount >= 29900
-  const expiresAt = new Date()
-  if (isAnnual) {
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1)
+  // ₱49 trial=4900, ₱99 monthly=9900, ₱499 annual=49900 (centavos)
+  let plan: string
+  let days: number
+  if (amount >= 49900) {
+    plan = 'annual'; days = 365
+  } else if (amount >= 9900) {
+    plan = 'monthly'; days = 30
   } else {
-    expiresAt.setMonth(expiresAt.getMonth() + 1)
+    plan = 'trial'; days = 7
   }
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + days)
 
   const licenseKey = generateLicenseKey()
 
@@ -101,7 +105,7 @@ Deno.serve(async (req) => {
     expires_at: expiresAt.toISOString(),
     email,
     payment_id: paymentId,
-    plan: isAnnual ? 'annual' : 'monthly',
+    plan,
   })
 
   if (error) {
@@ -109,7 +113,7 @@ Deno.serve(async (req) => {
     return new Response('DB error', { status: 500 })
   }
 
-  console.log(`License ${licenseKey} issued to ${email} (${isAnnual ? 'annual' : 'monthly'})`)
+  console.log(`License ${licenseKey} issued to ${email} (${plan}, ${days}d)`)
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

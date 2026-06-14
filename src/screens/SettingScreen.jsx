@@ -5,10 +5,12 @@ import { useStore } from '../store/useStore'
 import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory, exportAllData, importAllData } from '../db/db'
 import { connectPrinter, disconnectPrinter, isSupported as printerSupported } from '../utils/printer'
 import { validateLicense, getCachedLicense, clearLicense, retrieveLicenseByEmail } from '../lib/license'
-
-const PAYMONGO_CHECKOUT_URL = 'https://buy.stripe.com/placeholder' // TODO: replace with your PayMongo payment link
 import { pushToCloud, pullFromCloud, getLastSyncTime } from '../lib/sync'
 import { t } from '../i18n'
+
+const PAYMONGO_TRIAL_URL = 'https://buy.paymongo.com/placeholder-trial'   // TODO: ₱49 / 7-day trial link
+const PAYMONGO_MONTHLY_URL = 'https://buy.paymongo.com/placeholder-monthly' // TODO: ₱99/month link
+const PAYMONGO_ANNUAL_URL = 'https://buy.paymongo.com/placeholder-annual'  // TODO: ₱499/year link
 
 const CAT_EMOJIS = ['🍱','🍗','🥤','☕','🍵','🧋','🍔','🍕','🌮','🍜','🥗','🍰','🍦','🍩','🧁','🥞','🍖','🥪','🍲','🥘']
 
@@ -560,14 +562,39 @@ export default function SettingScreen() {
                 ))}
               </div>
 
-              <a
-                href={PAYMONGO_CHECKOUT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-12 rounded-btn bg-amber text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm"
-              >
-                ⭐ {lang === 'fil' ? 'Mag-upgrade — ₱49/buwan' : 'Upgrade to Premium — ₱49/month'}
-              </a>
+              <div className="flex flex-col gap-2">
+                <a
+                  href={PAYMONGO_TRIAL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-12 rounded-btn border-2 border-amber bg-amber-light text-amber-dark font-extrabold text-sm flex items-center justify-center gap-2"
+                >
+                  🎁 {lang === 'fil' ? 'Subukan — ₱49 / 7 araw' : 'Try it — ₱49 / 7 days'}
+                </a>
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href={PAYMONGO_MONTHLY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-14 rounded-btn border border-border bg-surface flex flex-col items-center justify-center gap-0.5"
+                  >
+                    <span className="text-sm font-extrabold text-text">₱99</span>
+                    <span className="text-[10px] font-bold text-muted">{lang === 'fil' ? 'bawat buwan' : 'per month'}</span>
+                  </a>
+                  <a
+                    href={PAYMONGO_ANNUAL_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-14 rounded-btn border-2 border-amber bg-amber text-white flex flex-col items-center justify-center gap-0.5"
+                  >
+                    <span className="text-sm font-extrabold">₱499</span>
+                    <span className="text-[10px] font-bold opacity-80">{lang === 'fil' ? 'bawat taon ⭐' : 'per year ⭐'}</span>
+                  </a>
+                </div>
+                <p className="text-[10px] text-faint text-center">
+                  {lang === 'fil' ? 'Makatipid ng ₱689 sa taunan vs buwanan' : 'Save ₱689/yr with annual vs monthly'}
+                </p>
+              </div>
 
               <div className="flex items-center gap-2 my-0.5">
                 <div className="flex-1 h-px bg-border" />
