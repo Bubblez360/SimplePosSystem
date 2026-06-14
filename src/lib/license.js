@@ -5,11 +5,12 @@ const CACHE_TTL = 1000 * 60 * 60 * 24 // 24 hours
 
 export async function validateLicense(key) {
   if (!key?.trim()) return { valid: false, error: 'No key' }
+  if (!supabase) return { valid: false, error: 'Supabase not configured' }
 
   const { data, error } = await supabase
     .from('licenses')
-    .select('key, active, expires_at')
-    .eq('key', key.trim())
+    .select('license_key, active, expires_at')
+    .eq('license_key', key.trim())
     .single()
 
   if (error || !data) return { valid: false, error: 'Invalid license key' }

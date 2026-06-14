@@ -4,6 +4,7 @@ import { getDB } from '../db/db'
 const STORES = ['items', 'categories', 'sales', 'expenses']
 
 export async function pushToCloud(licenseKey) {
+  if (!supabase) throw new Error('Supabase not configured')
   const db = await getDB()
   const results = []
 
@@ -31,6 +32,7 @@ export async function pushToCloud(licenseKey) {
 }
 
 export async function pullFromCloud(licenseKey) {
+  if (!supabase) throw new Error('Supabase not configured')
   const { data, error } = await supabase
     .from('vendor_backups')
     .select('store_name, record_id, data')
@@ -60,6 +62,7 @@ export async function pullFromCloud(licenseKey) {
 }
 
 export async function getLastSyncTime(licenseKey) {
+  if (!supabase) return null
   const { data } = await supabase
     .from('vendor_backups')
     .select('synced_at')
