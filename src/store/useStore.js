@@ -101,6 +101,15 @@ export const useStore = create((set, get) => ({
   },
   logo: null,
   setLogo: (logo) => set({ logo }),
+
+  // Premium / license
+  isPremium: false,
+  setIsPremium: (v) => set({ isPremium: v }),
+  licenseKey: localStorage.getItem('licenseKey') || '',
+  setLicenseKey: (key) => {
+    localStorage.setItem('licenseKey', key)
+    set({ licenseKey: key })
+  },
 }))
 
 // Parse cart key into itemId + optional variantIdx
