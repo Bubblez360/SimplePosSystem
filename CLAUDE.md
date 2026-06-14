@@ -32,6 +32,9 @@ Key design rules from DESIGN.md:
 - Payment: Static GCash QR image (vendor uploads screenshot)
 - Storage: IndexedDB for item photos, custom logo, GCash QR image
 
+## Out of Scope
+- NEVER build Utang / Lista (credit ledger) — not planned for this product
+
 ## Skill routing
 When the user's request matches an available skill, invoke it via the Skill tool.
 - Design changes → read DESIGN.md first, then implement
