@@ -4,12 +4,14 @@ import 'react-image-crop/dist/ReactCrop.css'
 import { useStore } from '../store/useStore'
 import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory, exportAllData, importAllData } from '../db/db'
 import { connectPrinter, disconnectPrinter, isSupported as printerSupported } from '../utils/printer'
+import { validateLicense, getCachedLicense, clearLicense } from '../lib/license'
+import { pushToCloud, pullFromCloud, getLastSyncTime } from '../lib/sync'
 import { t } from '../i18n'
 
 const CAT_EMOJIS = ['🍱','🍗','🥤','☕','🍵','🧋','🍔','🍕','🌮','🍜','🥗','🍰','🍦','🍩','🧁','🥞','🍖','🥪','🍲','🥘']
 
 export default function SettingScreen() {
-  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected, currentShift, setShiftModalOpen, logo, setLogo, theme, setTheme } = useStore()
+  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected, currentShift, setShiftModalOpen, logo, setLogo, theme, setTheme, isPremium, setIsPremium, licenseKey, setLicenseKey } = useStore()
   const [nameInput, setNameInput] = useState(businessName)
   const [newCatName, setNewCatName] = useState('')
   const [newCatEmoji, setNewCatEmoji] = useState('🍱')
@@ -25,11 +27,75 @@ export default function SettingScreen() {
   const [qrCrop, setQrCrop] = useState()
   const [qrCompletedCrop, setQrCompletedCrop] = useState(null)
   const qrImgRef = useRef(null)
+  const [licenseInput, setLicenseInput] = useState(licenseKey)
+  const [licenseLoading, setLicenseLoading] = useState(false)
+  const [syncLoading, setSyncLoading] = useState(false)
+  const [lastSync, setLastSync] = useState(null)
 
   useEffect(() => {
     getSetting('gcashQR').then(qr => { if (qr) setGcashQR(qr) })
     getAllCategories().then(setCategories)
+    const cached = getCachedLicense()
+    if (cached) {
+      setIsPremium(true)
+      if (cached.key) setLicenseKey(cached.key)
+    }
+    if (licenseKey) getLastSyncTime(licenseKey).then(setLastSync).catch(() => {})
   }, [])
+
+  async function handleActivateLicense() {
+    if (!licenseInput.trim()) return
+    setLicenseLoading(true)
+    const result = await validateLicense(licenseInput.trim())
+    setLicenseLoading(false)
+    if (result.valid) {
+      setLicenseKey(licenseInput.trim())
+      setIsPremium(true)
+      showToast(lang === 'fil' ? 'Premium na-activate! 🎉' : 'Premium activated! 🎉')
+      getLastSyncTime(licenseInput.trim()).then(setLastSync).catch(() => {})
+    } else {
+      showToast(result.error || (lang === 'fil' ? 'Invalid na license key' : 'Invalid license key'))
+    }
+  }
+
+  function handleRemoveLicense() {
+    clearLicense()
+    setLicenseKey('')
+    setLicenseInput('')
+    setIsPremium(false)
+    showToast(lang === 'fil' ? 'Premium na-remove' : 'Premium removed')
+  }
+
+  async function handlePushSync() {
+    if (!licenseKey) return
+    setSyncLoading('push')
+    try {
+      await pushToCloud(licenseKey)
+      const now = new Date().toISOString()
+      setLastSync(now)
+      showToast(lang === 'fil' ? 'Na-sync sa cloud! ☁️' : 'Synced to cloud! ☁️')
+    } catch (e) {
+      showToast(lang === 'fil' ? 'Hindi na-sync. Subukan ulit.' : 'Sync failed. Try again.')
+    }
+    setSyncLoading(false)
+  }
+
+  async function handlePullSync() {
+    if (!licenseKey) return
+    const msg = lang === 'fil'
+      ? 'Papalitan nito ang lahat ng local data. Sigurado ka ba?'
+      : 'This will replace all local data with cloud data. Are you sure?'
+    if (!window.confirm(msg)) return
+    setSyncLoading('pull')
+    try {
+      const { restored } = await pullFromCloud(licenseKey)
+      showToast(lang === 'fil' ? `Na-restore ang ${restored} records mula cloud!` : `Restored ${restored} records from cloud!`)
+      window.location.reload()
+    } catch (e) {
+      showToast(lang === 'fil' ? 'Hindi ma-restore. Subukan ulit.' : 'Restore failed. Try again.')
+    }
+    setSyncLoading(false)
+  }
 
   function showToast(msg) {
     setToast(msg)
@@ -420,7 +486,7 @@ export default function SettingScreen() {
         {settingsTab === 'system' && <>
         {/* User Guide */}
         <section>
-          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">📖 {lang === 'fil' ? 'User Guide' : 'User Guide'}</p>
+          <p className="text-xs font-bold text-muted uppercase tracking-wide mb-2">📖 User Guide</p>
           <a
             href="https://kingnoob3605.github.io/SimplePosSystem/"
             target="_blank"
@@ -429,6 +495,63 @@ export default function SettingScreen() {
           >
             <span>📖</span> {lang === 'fil' ? 'Buksan ang User Guide' : 'Open User Guide'}
           </a>
+        </section>
+
+        {/* Premium */}
+        <section>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-xs font-bold text-muted uppercase tracking-wide">⭐ Premium</p>
+            {isPremium && <span className="text-[10px] font-extrabold text-white bg-amber px-2 py-0.5 rounded-full">ACTIVE</span>}
+          </div>
+          {isPremium ? (
+            <div className="flex flex-col gap-2">
+              <div className="px-3 py-3 bg-amber-light border border-amber rounded-card">
+                <p className="text-xs font-bold text-amber-dark">☁️ {lang === 'fil' ? 'Cloud Sync' : 'Cloud Sync'}</p>
+                {lastSync && (
+                  <p className="text-[10px] text-muted mt-0.5">
+                    {lang === 'fil' ? 'Huling sync:' : 'Last sync:'} {new Date(lastSync).toLocaleString(lang === 'fil' ? 'fil-PH' : 'en-PH')}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handlePushSync}
+                disabled={!!syncLoading}
+                className="w-full h-12 rounded-btn bg-amber text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {syncLoading === 'push' ? '⏳' : '☁️'} {lang === 'fil' ? 'I-sync sa Cloud' : 'Sync to Cloud'}
+              </button>
+              <button
+                onClick={handlePullSync}
+                disabled={!!syncLoading}
+                className="w-full h-12 rounded-btn border border-border bg-surface font-bold text-sm text-text flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {syncLoading === 'pull' ? '⏳' : '📲'} {lang === 'fil' ? 'I-restore mula Cloud' : 'Restore from Cloud'}
+              </button>
+              <button
+                onClick={handleRemoveLicense}
+                className="text-xs font-bold text-error text-center py-1"
+              >
+                {lang === 'fil' ? 'Alisin ang Premium' : 'Remove Premium'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-muted">{lang === 'fil' ? 'I-enter ang iyong license key para ma-unlock ang cloud backup at multi-device sync.' : 'Enter your license key to unlock cloud backup and multi-device sync.'}</p>
+              <input
+                value={licenseInput}
+                onChange={e => setLicenseInput(e.target.value)}
+                placeholder={lang === 'fil' ? 'License key...' : 'License key...'}
+                className="w-full h-10 rounded-lg border border-border px-3 text-sm font-mono bg-surface-2 focus:outline-none focus:border-amber text-text"
+              />
+              <button
+                onClick={handleActivateLicense}
+                disabled={licenseLoading || !licenseInput.trim()}
+                className="w-full h-12 rounded-btn bg-amber text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {licenseLoading ? '⏳ Checking...' : '⭐ ' + (lang === 'fil' ? 'I-activate ang Premium' : 'Activate Premium')}
+              </button>
+            </div>
+          )}
         </section>
 
         <section>
