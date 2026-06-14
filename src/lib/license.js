@@ -39,3 +39,22 @@ export function getCachedLicense() {
 export function clearLicense() {
   localStorage.removeItem(CACHE_KEY)
 }
+
+export async function retrieveLicenseByEmail(email) {
+  if (!email?.trim() || !supabase) return { key: null, error: 'Invalid email' }
+
+  const { data, error } = await supabase
+    .from('licenses')
+    .select('license_key, active, expires_at')
+    .eq('email', email.toLowerCase().trim())
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !data) return { key: null, error: 'No license found for that email' }
+  if (data.expires_at && new Date(data.expires_at) < new Date()) {
+    return { key: null, error: 'License expired' }
+  }
+  return { key: data.license_key }
+}
