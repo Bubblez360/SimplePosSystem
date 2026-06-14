@@ -4,7 +4,9 @@ import 'react-image-crop/dist/ReactCrop.css'
 import { useStore } from '../store/useStore'
 import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory, exportAllData, importAllData } from '../db/db'
 import { connectPrinter, disconnectPrinter, isSupported as printerSupported } from '../utils/printer'
-import { validateLicense, getCachedLicense, clearLicense } from '../lib/license'
+import { validateLicense, getCachedLicense, clearLicense, retrieveLicenseByEmail } from '../lib/license'
+
+const PAYMONGO_CHECKOUT_URL = 'https://buy.stripe.com/placeholder' // TODO: replace with your PayMongo payment link
 import { pushToCloud, pullFromCloud, getLastSyncTime } from '../lib/sync'
 import { t } from '../i18n'
 
@@ -31,6 +33,8 @@ export default function SettingScreen() {
   const [licenseLoading, setLicenseLoading] = useState(false)
   const [syncLoading, setSyncLoading] = useState(false)
   const [lastSync, setLastSync] = useState(null)
+  const [emailInput, setEmailInput] = useState('')
+  const [retrieveLoading, setRetrieveLoading] = useState(false)
 
   useEffect(() => {
     getSetting('gcashQR').then(qr => { if (qr) setGcashQR(qr) })
@@ -55,6 +59,19 @@ export default function SettingScreen() {
       getLastSyncTime(licenseInput.trim()).then(setLastSync).catch(() => {})
     } else {
       showToast(result.error || (lang === 'fil' ? 'Invalid na license key' : 'Invalid license key'))
+    }
+  }
+
+  async function handleRetrieveKey() {
+    if (!emailInput.trim()) return
+    setRetrieveLoading(true)
+    const result = await retrieveLicenseByEmail(emailInput.trim())
+    setRetrieveLoading(false)
+    if (result.key) {
+      setLicenseInput(result.key)
+      showToast(lang === 'fil' ? 'Key na-retrieve! I-activate na.' : 'Key retrieved! Now activate it.')
+    } else {
+      showToast(result.error || (lang === 'fil' ? 'Walang license para sa email na iyon' : 'No license found for that email'))
     }
   }
 
@@ -535,20 +552,60 @@ export default function SettingScreen() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs text-muted">{lang === 'fil' ? 'I-enter ang iyong license key para ma-unlock ang cloud backup at multi-device sync.' : 'Enter your license key to unlock cloud backup and multi-device sync.'}</p>
+            <div className="flex flex-col gap-2.5">
+              <div className="px-3 py-2.5 bg-surface-2 rounded-card border border-border">
+                <p className="text-[11px] font-bold text-text mb-1.5">{lang === 'fil' ? '✨ Kasama sa Premium:' : '✨ Premium includes:'}</p>
+                {['☁️ Cloud backup & restore', '📱 Multi-device sync', '📊 Full sales history', '📤 CSV export'].map(f => (
+                  <p key={f} className="text-[11px] text-muted leading-5">{f}</p>
+                ))}
+              </div>
+
+              <a
+                href={PAYMONGO_CHECKOUT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-12 rounded-btn bg-amber text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm"
+              >
+                ⭐ {lang === 'fil' ? 'Mag-upgrade — ₱299/taon' : 'Upgrade to Premium — ₱299/year'}
+              </a>
+
+              <div className="flex items-center gap-2 my-0.5">
+                <div className="flex-1 h-px bg-border" />
+                <p className="text-[10px] font-bold text-faint uppercase">{lang === 'fil' ? 'May key na?' : 'Already paid?'}</p>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleRetrieveKey()}
+                  placeholder={lang === 'fil' ? 'Email na ginamit sa bayad...' : 'Email used for payment...'}
+                  type="email"
+                  className="flex-1 h-10 rounded-lg border border-border px-3 text-xs bg-surface-2 focus:outline-none focus:border-amber text-text"
+                />
+                <button
+                  onClick={handleRetrieveKey}
+                  disabled={retrieveLoading || !emailInput.trim()}
+                  className="h-10 px-3 rounded-btn border border-border bg-surface text-xs font-bold text-text disabled:opacity-50 whitespace-nowrap"
+                >
+                  {retrieveLoading ? '⏳' : (lang === 'fil' ? 'Kuhanin' : 'Get Key')}
+                </button>
+              </div>
+
               <input
                 value={licenseInput}
                 onChange={e => setLicenseInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleActivateLicense()}
                 placeholder={lang === 'fil' ? 'License key...' : 'License key...'}
                 className="w-full h-10 rounded-lg border border-border px-3 text-sm font-mono bg-surface-2 focus:outline-none focus:border-amber text-text"
               />
               <button
                 onClick={handleActivateLicense}
                 disabled={licenseLoading || !licenseInput.trim()}
-                className="w-full h-12 rounded-btn bg-amber text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full h-12 rounded-btn bg-amber-light border border-amber text-amber-dark font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {licenseLoading ? '⏳ Checking...' : '⭐ ' + (lang === 'fil' ? 'I-activate ang Premium' : 'Activate Premium')}
+                {licenseLoading ? '⏳ Checking...' : (lang === 'fil' ? 'I-activate ang License Key' : 'Activate License Key')}
               </button>
             </div>
           )}
