@@ -223,43 +223,52 @@ export async function closeShift(sales) {
   return record
 }
 
-// Seed default data on first run
+const DEFAULT_CATS = [
+  { name: 'Drinks', emoji: '🥤' },
+  { name: 'Milk Tea', emoji: '🧋' },
+  { name: 'Coffee', emoji: '☕' },
+  { name: 'Food', emoji: '🍱' },
+  { name: 'Snacks', emoji: '🍟' },
+  { name: 'Desserts', emoji: '🍰' },
+]
+
+const DEFAULT_ITEMS = [
+  { name: 'Milk Tea', emoji: '🧋', photo: null, price: null, _cat: 'Milk Tea', trackStock: false, stock: 0,
+    variants: [{ name: 'Small', price: 65 }, { name: 'Medium', price: 75 }, { name: 'Large', price: 90 }],
+    addons: [{ name: 'Extra Pearls', price: 10 }, { name: 'Cream Cheese', price: 15 }, { name: 'Nata de Coco', price: 10 }] },
+  { name: 'Iced Coffee', emoji: '☕', photo: null, price: null, _cat: 'Coffee', trackStock: false, stock: 0,
+    variants: [{ name: 'Small', price: 60 }, { name: 'Medium', price: 70 }, { name: 'Large', price: 80 }],
+    addons: [{ name: 'Extra Shot', price: 20 }, { name: 'Whipped Cream', price: 15 }] },
+  { name: 'Lemonade', emoji: '🍋', photo: null, price: 40, _cat: 'Drinks', trackStock: false, stock: 0, variants: [], addons: [] },
+  { name: 'Rice Meal', emoji: '🍱', photo: null, price: null, _cat: 'Food', trackStock: false, stock: 0,
+    variants: [{ name: 'Regular', price: 80 }, { name: 'Solo', price: 95 }], addons: [] },
+  { name: 'Fries', emoji: '🍟', photo: null, price: 45, _cat: 'Snacks', trackStock: false, stock: 0,
+    variants: [], addons: [{ name: 'Cheese Dip', price: 15 }, { name: 'Sour Cream', price: 15 }] },
+  { name: 'Ice Cream', emoji: '🍦', photo: null, price: 35, _cat: 'Desserts', trackStock: false, stock: 0, variants: [], addons: [] },
+]
+
+// Seed default data on first run — uses atomic transaction to prevent double-seeding
+// under React StrictMode (which runs effects twice in development).
 export async function seedDefaultData() {
   const db = await getDB()
-  const existingCats = await db.getAll('categories')
-  if (existingCats.length > 0) return
+  const tx = db.transaction(['settings', 'categories', 'items'], 'readwrite')
+  const settingsStore = tx.objectStore('settings')
+  const catStore = tx.objectStore('categories')
+  const itemStore = tx.objectStore('items')
+
+  const seeded = await settingsStore.get('defaultDataSeeded')
+  if (seeded) { await tx.done; return }
+  await settingsStore.put(true, 'defaultDataSeeded')
 
   const catIds = {}
-  const defaultCats = [
-    { name: 'Drinks', emoji: '🥤' },
-    { name: 'Milk Tea', emoji: '🧋' },
-    { name: 'Coffee', emoji: '☕' },
-    { name: 'Food', emoji: '🍱' },
-    { name: 'Snacks', emoji: '🍟' },
-    { name: 'Desserts', emoji: '🍰' },
-  ]
-  for (const cat of defaultCats) {
-    const id = await db.add('categories', cat)
+  for (const cat of DEFAULT_CATS) {
+    const id = await catStore.add(cat)
     catIds[cat.name] = id
   }
-
-  const defaultItems = [
-    { name: 'Milk Tea', emoji: '🧋', photo: null, price: null, categoryId: catIds['Milk Tea'], trackStock: false, stock: 0,
-      variants: [{ name: 'Small', price: 65 }, { name: 'Medium', price: 75 }, { name: 'Large', price: 90 }],
-      addons: [{ name: 'Extra Pearls', price: 10 }, { name: 'Cream Cheese', price: 15 }, { name: 'Nata de Coco', price: 10 }] },
-    { name: 'Iced Coffee', emoji: '☕', photo: null, price: null, categoryId: catIds['Coffee'], trackStock: false, stock: 0,
-      variants: [{ name: 'Small', price: 60 }, { name: 'Medium', price: 70 }, { name: 'Large', price: 80 }],
-      addons: [{ name: 'Extra Shot', price: 20 }, { name: 'Whipped Cream', price: 15 }] },
-    { name: 'Lemonade', emoji: '🍋', photo: null, price: 40, categoryId: catIds['Drinks'], trackStock: false, stock: 0, variants: [], addons: [] },
-    { name: 'Rice Meal', emoji: '🍱', photo: null, price: null, categoryId: catIds['Food'], trackStock: false, stock: 0,
-      variants: [{ name: 'Regular', price: 80 }, { name: 'Solo', price: 95 }], addons: [] },
-    { name: 'Fries', emoji: '🍟', photo: null, price: 45, categoryId: catIds['Snacks'], trackStock: false, stock: 0,
-      variants: [], addons: [{ name: 'Cheese Dip', price: 15 }, { name: 'Sour Cream', price: 15 }] },
-    { name: 'Ice Cream', emoji: '🍦', photo: null, price: 35, categoryId: catIds['Desserts'], trackStock: false, stock: 0, variants: [], addons: [] },
-  ]
-  for (const item of defaultItems) {
-    await db.add('items', item)
+  for (const { _cat, ...item } of DEFAULT_ITEMS) {
+    await itemStore.add({ ...item, categoryId: catIds[_cat] })
   }
+  await tx.done
 }
 
 // Settings
