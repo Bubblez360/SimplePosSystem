@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const PAYMONGO_WEBHOOK_SECRET = Deno.env.get('PAYMONGO_WEBHOOK_SECRET') ?? ''
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
+const FROM_EMAIL = Deno.env.get('FROM_EMAIL') ?? 'TindaPOS <noreply@resend.dev>'
 
 const KEY_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
@@ -33,6 +35,90 @@ async function verifySignature(secret: string, body: string, sigHeader: string):
   const computed = Array.from(new Uint8Array(sigBytes))
     .map(b => b.toString(16).padStart(2, '0')).join('')
   return computed === signature
+}
+
+async function sendLicenseEmail(
+  email: string,
+  licenseKey: string,
+  plan: string,
+  expiresAt: Date,
+): Promise<void> {
+  if (!RESEND_API_KEY) {
+    console.log('RESEND_API_KEY not set — skipping email')
+    return
+  }
+
+  const planLabel = plan === 'annual' ? 'Annual (1 taon)' : plan === 'monthly' ? 'Monthly (30 araw)' : 'Trial (7 araw)'
+  const expiryStr = expiresAt.toLocaleDateString('fil-PH', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1c1917;">
+  <div style="text-align: center; margin-bottom: 24px;">
+    <h1 style="color: #F59E0B; margin: 0; font-size: 28px;">TindaPOS</h1>
+    <p style="color: #78716c; margin: 4px 0 0;">License Key</p>
+  </div>
+
+  <p>Salamat sa iyong subscription! Nandito na ang iyong license key:</p>
+
+  <div style="background: #fafaf7; border: 2px solid #F59E0B; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
+    <p style="margin: 0 0 8px; font-size: 12px; color: #78716c; text-transform: uppercase; letter-spacing: 1px;">Your License Key</p>
+    <p style="margin: 0; font-family: monospace; font-size: 22px; font-weight: bold; color: #1c1917; letter-spacing: 2px;">${licenseKey}</p>
+  </div>
+
+  <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+    <tr>
+      <td style="padding: 8px 0; color: #78716c; font-size: 14px;">Plan</td>
+      <td style="padding: 8px 0; font-weight: 600; text-align: right;">${planLabel}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; color: #78716c; font-size: 14px;">Valid hanggang</td>
+      <td style="padding: 8px 0; font-weight: 600; text-align: right;">${expiryStr}</td>
+    </tr>
+  </table>
+
+  <h3 style="color: #1c1917; margin: 24px 0 12px;">Paano i-activate:</h3>
+  <ol style="margin: 0; padding-left: 20px; line-height: 1.8; color: #44403c;">
+    <li>Buksan ang TindaPOS app</li>
+    <li>Pumunta sa <strong>Settings</strong></li>
+    <li>I-tap ang <strong>"I-activate ang Premium"</strong></li>
+    <li>I-paste ang license key sa itaas</li>
+    <li>I-tap ang <strong>Activate</strong></li>
+  </ol>
+
+  <p style="margin-top: 24px; font-size: 13px; color: #78716c;">
+    Nawala ang key? I-type ang email mo sa Settings → "Retrieve License Key" para makuha ulit.
+  </p>
+
+  <hr style="border: none; border-top: 1px solid #e7e5e4; margin: 24px 0;">
+  <p style="font-size: 12px; color: #a8a29e; text-align: center; margin: 0;">
+    TindaPOS — Para sa mga tindero at negosyante
+  </p>
+</body>
+</html>`
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: [email],
+      subject: `Ang iyong TindaPOS License Key — ${planLabel}`,
+      html,
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    console.error('Resend error:', err)
+  } else {
+    console.log(`Email sent to ${email}`)
+  }
 }
 
 Deno.serve(async (req) => {
@@ -114,6 +200,9 @@ Deno.serve(async (req) => {
   }
 
   console.log(`License ${licenseKey} issued to ${email} (${plan}, ${days}d)`)
+
+  await sendLicenseEmail(email, licenseKey, plan, expiresAt)
+
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
