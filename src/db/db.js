@@ -311,7 +311,14 @@ export async function exportAllData() {
 }
 
 export async function importAllData(data) {
-  if (!data || data.version !== 1) throw new Error('Invalid backup file')
+  if (!data || typeof data !== 'object') throw new Error('Invalid backup file')
+  if (data.version !== 1) throw new Error('Invalid backup file')
+  const storeKeys = ['items', 'categories', 'sales', 'expenses', 'shifts']
+  for (const store of storeKeys) {
+    if (data[store] !== undefined && !Array.isArray(data[store])) {
+      throw new Error(`Invalid backup: ${store} must be an array`)
+    }
+  }
   const db = await getDB()
 
   const stores = ['items', 'categories', 'sales', 'expenses', 'shifts']
