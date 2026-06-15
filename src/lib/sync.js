@@ -2,74 +2,60 @@ import { supabase } from './supabase'
 import { getDB } from '../db/db'
 
 const STORES = ['items', 'categories', 'sales', 'expenses']
+const LAST_SYNC_KEY = 'lastCloudSync'
 
 export async function pushToCloud(licenseKey) {
   if (!supabase) throw new Error('Supabase not configured')
   const db = await getDB()
-  const results = []
 
+  const data = {}
   for (const storeName of STORES) {
-    const records = await db.getAll(storeName)
-    if (!records.length) continue
-
-    const rows = records.map(r => ({
-      vendor_key: licenseKey,
-      store_name: storeName,
-      record_id: String(r.id),
-      data: r,
-      synced_at: new Date().toISOString(),
-    }))
-
-    const { error } = await supabase
-      .from('vendor_backups')
-      .upsert(rows, { onConflict: 'vendor_key,store_name,record_id' })
-
-    if (error) results.push({ storeName, error: error.message })
-    else results.push({ storeName, count: rows.length })
+    data[storeName] = await db.getAll(storeName)
   }
 
-  return results
+  const { data: result, error } = await supabase.functions.invoke('push-backup', {
+    body: { licenseKey, data },
+  })
+
+  if (error) throw new Error(error.message)
+  if (result?.error) throw new Error(result.error)
+
+  if (result?.syncedAt) localStorage.setItem(LAST_SYNC_KEY, result.syncedAt)
+
+  return result.results
 }
 
 export async function pullFromCloud(licenseKey) {
   if (!supabase) throw new Error('Supabase not configured')
-  const { data, error } = await supabase
-    .from('vendor_backups')
-    .select('store_name, record_id, data')
-    .eq('vendor_key', licenseKey)
+
+  const { data: result, error } = await supabase.functions.invoke('pull-backup', {
+    body: { licenseKey },
+  })
 
   if (error) throw new Error(error.message)
-  if (!data?.length) return { restored: 0 }
+  if (result?.error) throw new Error(result.error)
+  if (!result?.restored) return { restored: 0 }
 
   const db = await getDB()
-  const grouped = {}
-  for (const row of data) {
-    if (!grouped[row.store_name]) grouped[row.store_name] = []
-    grouped[row.store_name].push(row.data)
-  }
+  const grouped = result.data
+  const validStores = STORES.filter(s => Array.isArray(grouped[s]) && grouped[s].length > 0)
 
-  const validStores = STORES.filter(s => grouped[s]?.length)
-  const tx = db.transaction(validStores, 'readwrite')
-  for (const storeName of validStores) {
-    await tx.objectStore(storeName).clear()
-    for (const record of grouped[storeName]) {
-      await tx.objectStore(storeName).add(record)
+  if (validStores.length > 0) {
+    const tx = db.transaction(validStores, 'readwrite')
+    for (const storeName of validStores) {
+      await tx.objectStore(storeName).clear()
+      for (const record of grouped[storeName]) {
+        await tx.objectStore(storeName).add(record)
+      }
     }
+    await tx.done
   }
-  await tx.done
 
-  return { restored: data.length }
+  if (result.lastSyncAt) localStorage.setItem(LAST_SYNC_KEY, result.lastSyncAt)
+
+  return { restored: result.restored }
 }
 
-export async function getLastSyncTime(licenseKey) {
-  if (!supabase) return null
-  const { data } = await supabase
-    .from('vendor_backups')
-    .select('synced_at')
-    .eq('vendor_key', licenseKey)
-    .order('synced_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  return data?.synced_at ?? null
+export function getLastSyncTime(_licenseKey) {
+  return Promise.resolve(localStorage.getItem(LAST_SYNC_KEY) ?? null)
 }
