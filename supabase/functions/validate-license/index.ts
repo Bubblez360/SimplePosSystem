@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
 
   const { data, error } = await admin
     .from('licenses')
-    .select('active, expires_at')
+    .select('active, expires_at, plan')
     .eq('license_key', key)
     .single()
 
@@ -71,5 +71,5 @@ Deno.serve(async (req: Request) => {
     return json({ valid: false, error: 'License expired' })
   }
 
-  return json({ valid: true, expires_at: data.expires_at })
+  return json({ valid: true, expires_at: data.expires_at, plan: data.plan })
 })
