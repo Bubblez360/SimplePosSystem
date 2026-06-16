@@ -14,7 +14,7 @@ export async function validateLicense(key) {
   if (error) return { valid: false, error: error.message ?? 'Validation failed' }
   if (!data?.valid) return { valid: false, error: data?.error ?? 'Invalid license key' }
 
-  const cache = { key, expires_at: data.expires_at, cachedAt: Date.now() }
+  const cache = { key, expires_at: data.expires_at, plan: data.plan, cachedAt: Date.now() }
   localStorage.setItem(CACHE_KEY, JSON.stringify(cache))
   return { valid: true, ...cache }
 }
@@ -35,6 +35,7 @@ export function getCachedLicense() {
 
 export function clearLicense() {
   localStorage.removeItem(CACHE_KEY)
+  localStorage.removeItem('tindapos_trial_used')
 }
 
 export async function retrieveLicenseByEmail(email) {
