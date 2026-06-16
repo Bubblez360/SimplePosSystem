@@ -37,6 +37,7 @@ export default function SettingScreen() {
   const [lastSync, setLastSync] = useState(null)
   const [emailInput, setEmailInput] = useState('')
   const [retrieveLoading, setRetrieveLoading] = useState(false)
+  const [trialUsed, setTrialUsed] = useState(() => localStorage.getItem('tindapos_trial_used') === '1')
 
   useEffect(() => {
     getSetting('gcashQR').then(qr => { if (qr) setGcashQR(qr) })
@@ -57,6 +58,10 @@ export default function SettingScreen() {
     if (result.valid) {
       setLicenseKey(licenseInput.trim())
       setIsPremium(true)
+      if (result.plan === 'trial') {
+        localStorage.setItem('tindapos_trial_used', '1')
+        setTrialUsed(true)
+      }
       showToast(lang === 'fil' ? 'Premium na-activate! 🎉' : 'Premium activated! 🎉')
       getLastSyncTime(licenseInput.trim()).then(setLastSync).catch(() => {})
     } else {
@@ -82,6 +87,7 @@ export default function SettingScreen() {
     setLicenseKey('')
     setLicenseInput('')
     setIsPremium(false)
+    setTrialUsed(false)
     showToast(lang === 'fil' ? 'Premium na-remove' : 'Premium removed')
   }
 
@@ -563,14 +569,16 @@ export default function SettingScreen() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <a
-                  href={PAYMONGO_TRIAL_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full h-12 rounded-btn border-2 border-amber bg-amber-light text-amber-dark font-extrabold text-sm flex items-center justify-center gap-2"
-                >
-                  🎁 {lang === 'fil' ? 'Subukan — ₱49 / 7 araw' : 'Try it — ₱49 / 7 days'}
-                </a>
+                {!trialUsed && (
+                  <a
+                    href={PAYMONGO_TRIAL_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-12 rounded-btn border-2 border-amber bg-amber-light text-amber-dark font-extrabold text-sm flex items-center justify-center gap-2"
+                  >
+                    🎁 {lang === 'fil' ? 'Subukan — ₱49 / 7 araw' : 'Try it — ₱49 / 7 days'}
+                  </a>
+                )}
                 <div className="grid grid-cols-2 gap-2">
                   <a
                     href={PAYMONGO_MONTHLY_URL}
