@@ -99,11 +99,18 @@ export default function BentaScreen() {
 
       <div className="p-3 pb-2">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <span className="text-5xl">🏪</span>
-            <p className="text-muted text-sm">{t('noItems', lang)}</p>
-            <p className="text-faint text-xs">{t('goToMenu', lang)}</p>
-          </div>
+          items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-border flex items-center justify-center text-3xl">🏪</div>
+              <p className="text-sm font-bold text-text">{t('noItems', lang)}</p>
+              <p className="text-xs text-faint">{t('goToMenu', lang)}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 gap-2 text-center">
+              <p className="text-3xl">🔍</p>
+              <p className="text-sm font-semibold text-muted">{t('noSearchResults', lang)}</p>
+            </div>
+          )
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {filtered.map(item => {
@@ -157,7 +164,7 @@ export default function BentaScreen() {
 
                   {hasVariants && !isOutOfStock && (
                     <div className="absolute top-2 right-2 bg-surface rounded px-1 py-0.5">
-                      <span className="text-[9px] font-bold text-muted uppercase">sizes</span>
+                      <span className="text-[9px] font-bold text-muted uppercase">{t('variantBadge', lang)}</span>
                     </div>
                   )}
 

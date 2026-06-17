@@ -1,3 +1,4 @@
+import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import { useStore } from '../store/useStore'
 import { t } from '../i18n'
 
@@ -16,13 +17,12 @@ export default function ReceiptModal() {
     <div className="fixed inset-0 z-[60] flex flex-col bg-bg overflow-y-auto">
       {/* Success header */}
       <div className="flex flex-col items-center pt-10 pb-6 px-4" style={{ background: 'var(--amber-bg)' }}>
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
-          style={{ background: 'var(--amber)', boxShadow: '0 4px 24px rgba(245,158,11,0.35)' }}
-        >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-            <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <div className="w-24 h-24 -mt-2 mb-1">
+          <DotLottieReact
+            src="https://lottie.host/ef627044-9492-4b31-8ddd-5d4d629b47ae/y6zRJctq9s.lottie"
+            autoplay
+            loop={false}
+          />
         </div>
         <p className="text-xl font-extrabold text-text tracking-tight">
           {isFil ? 'Bayad na!' : 'Payment received!'}

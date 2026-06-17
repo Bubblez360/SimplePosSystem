@@ -267,7 +267,7 @@ export default function CheckoutModal() {
 
           {/* ── Payment method ── */}
           <div className="grid grid-cols-2 gap-2">
-            {[['cash', '💵', 'cash'], ['gcash', '💚', 'gcash']].map(([key, icon, labelKey]) => (
+            {[['cash', 'cash'], ['gcash', 'gcash']].map(([key, labelKey]) => (
               <button
                 key={key}
                 onClick={() => setMethod(key)}
@@ -276,7 +276,12 @@ export default function CheckoutModal() {
                   ? { borderColor: 'var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber-dark)' }
                   : { borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-muted)' }}
               >
-                <span className="text-base">{icon}</span>
+                {key === 'cash' ? (
+                  <span className="text-base">💵</span>
+                ) : (
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold flex-shrink-0"
+                    style={{ background: 'var(--green)', color: '#fff' }}>G</span>
+                )}
                 <span>{t(labelKey, lang)}</span>
               </button>
             ))}

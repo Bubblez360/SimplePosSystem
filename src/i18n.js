@@ -124,6 +124,20 @@ const strings = {
     benta2: 'Benta',
     // Search
     searchItems: 'Hanapin ang item...',
+    noSearchResults: 'Walang nahanap.',
+    // Variant badge
+    variantBadge: 'Opsyon',
+    // Ulat tabs
+    analyticsTab: 'Pagsusuri',
+    transactionsTab: 'Transaksyon',
+    // Ulat chart labels
+    avgOrder: 'Avg. Order',
+    salesByHour: 'Oras ng Benta',
+    salesByDay: 'Araw ng Benta',
+    monthlyTrend: 'Buwan ng Taon',
+    salesByCategory: 'Benta sa Kategorya',
+    // GCash
+    noGcashQR: 'Walang GCash QR na naka-upload.',
     // Logo
     storeLogo: 'Logo ng Tindahan',
     uploadLogo: 'Mag-upload ng Logo',
@@ -268,6 +282,20 @@ const strings = {
     benta2: 'Sales',
     // Search
     searchItems: 'Search items...',
+    noSearchResults: 'Nothing found.',
+    // Variant badge
+    variantBadge: 'Options',
+    // Ulat tabs
+    analyticsTab: 'Analytics',
+    transactionsTab: 'Transactions',
+    // Ulat chart labels
+    avgOrder: 'Avg. Order',
+    salesByHour: 'Sales by Hour',
+    salesByDay: 'Sales by Day',
+    monthlyTrend: 'Monthly Trend',
+    salesByCategory: 'Sales by Category',
+    // GCash
+    noGcashQR: 'No GCash QR uploaded yet.',
     // Logo
     storeLogo: 'Store Logo',
     uploadLogo: 'Upload Logo',

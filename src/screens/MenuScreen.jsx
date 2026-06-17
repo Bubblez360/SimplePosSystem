@@ -466,10 +466,22 @@ export default function MenuScreen() {
 
       <div className="p-3 flex flex-col gap-2">
         {visibleItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <span className="text-5xl">📋</span>
-            <p className="text-muted text-sm">{t('noItems', lang)}</p>
-          </div>
+          menuSearch.trim() ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+              <p className="text-3xl">🔍</p>
+              <p className="text-sm font-semibold text-muted">{t('noSearchResults', lang)}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-8 px-4">
+              <div className="w-full border-2 border-dashed border-border rounded-card p-8 flex flex-col items-center gap-3">
+                <span className="text-4xl">📋</span>
+                <p className="text-sm font-bold text-text">{t('noItems', lang)}</p>
+                <button onClick={openNew} className="h-10 px-5 rounded-pill bg-amber text-white text-xs font-bold">
+                  + {t('addItem', lang)}
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           visibleItems.map(item => (
             <div
