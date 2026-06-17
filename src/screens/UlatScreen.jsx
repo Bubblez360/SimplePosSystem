@@ -268,8 +268,8 @@ export default function UlatScreen() {
                 view === v ? 'border-amber text-amber' : 'border-transparent text-muted'
               }`}>
               {v === 'analytics'
-                ? (lang === 'fil' ? '📊 Analytics' : '📊 Analytics')
-                : `🧾 ${lang === 'fil' ? 'Transaksyon' : 'Transactions'}${sales.length > 0 ? ` (${sales.length})` : ''}`}
+                ? `📊 ${t('analyticsTab', lang)}`
+                : `🧾 ${t('transactionsTab', lang)}${sales.length > 0 ? ` (${sales.length})` : ''}`}
             </button>
           ))}
         </div>
@@ -280,12 +280,12 @@ export default function UlatScreen() {
       {view === 'analytics' && <>
 
         {/* ── Hero card ── */}
-        <div className="rounded-card overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%)' }}>
+        <div className="rounded-card overflow-hidden" style={{ background: 'var(--amber)' }}>
           <div className="px-5 pt-5 pb-4">
             <p className="text-[11px] font-bold text-white/70 uppercase tracking-widest mb-1">
-              {period === 'today' ? (lang === 'fil' ? 'Benta Ngayon' : "Today's Sales")
-                : period === 'week' ? (lang === 'fil' ? 'Benta Ngayong Linggo' : 'This Week')
-                : (lang === 'fil' ? 'Benta Ngayong Buwan' : 'This Month')}
+              {period === 'today' ? t('todaySales', lang)
+                : period === 'week' ? t('weeklySales', lang)
+                : t('monthlySales', lang)}
             </p>
             <p className="font-mono text-4xl font-bold text-white leading-none tracking-tight">
               ₱{total.toFixed(2)}
@@ -298,7 +298,7 @@ export default function UlatScreen() {
               {avgOrder > 0 && (
                 <div>
                   <p className="text-white/60 text-[10px] font-bold uppercase tracking-wide">
-                    {lang === 'fil' ? 'Avg. Order' : 'Avg. Order'}
+                    {t('avgOrder', lang)}
                   </p>
                   <p className="text-white font-extrabold text-xl leading-none font-mono">₱{avgOrder.toFixed(0)}</p>
                 </div>
@@ -358,9 +358,9 @@ export default function UlatScreen() {
         {total > 0 && (
           <div className="bg-surface border border-border rounded-card p-4">
             <p className="text-[10px] font-extrabold text-muted uppercase tracking-widest mb-3">
-              {period === 'today' ? (lang === 'fil' ? '🕐 Oras ng Benta' : '🕐 Sales by Hour')
-                : period === 'week' ? (lang === 'fil' ? '📅 Araw ng Benta' : '📅 Sales by Day')
-                : (lang === 'fil' ? '📅 Buwan ng Taon' : '📅 Monthly Trend')}
+              {period === 'today' ? `🕐 ${t('salesByHour', lang)}`
+                : period === 'week' ? `📅 ${t('salesByDay', lang)}`
+                : `📅 ${t('monthlyTrend', lang)}`}
             </p>
             <div className={`flex items-end gap-0.5 h-16 ${period === 'month' ? 'gap-px' : 'gap-1'}`}>
               {timeChart.map((bar, i) => (
@@ -413,7 +413,7 @@ export default function UlatScreen() {
         {categoryData.length > 0 && (
           <div className="bg-surface border border-border rounded-card overflow-hidden">
             <p className="px-4 pt-3 pb-2 text-[10px] font-extrabold text-muted uppercase tracking-widest">
-              📂 {lang === 'fil' ? 'Benta sa Kategorya' : 'Sales by Category'}
+              📂 {t('salesByCategory', lang)}
             </p>
             <div className="flex flex-col">
               {categoryData.map(([cat, revenue]) => (
@@ -442,9 +442,9 @@ export default function UlatScreen() {
 
       {view === 'transactions' && (
         sales.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="text-5xl">📊</span>
-            <p className="text-muted text-sm">{t('noSales', lang)}</p>
+          <div className="py-16 text-center border border-dashed border-border rounded-card">
+            <p className="text-sm font-semibold text-muted">{t('noSales', lang)}</p>
+            <p className="text-xs text-faint mt-1">{periodLabel[period]}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">

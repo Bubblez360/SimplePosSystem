@@ -61,8 +61,10 @@ export default function GCashModal() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 text-center">
-            <span className="text-6xl">📱</span>
-            <p className="text-white/60 text-sm">Walang GCash QR na naka-upload.</p>
+            <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/30 flex items-center justify-center">
+              <span className="text-3xl">📷</span>
+            </div>
+            <p className="text-white/60 text-sm font-semibold">{t('noGcashQR', lang)}</p>
             <p className="text-white/40 text-xs">{t('noQRHint', lang)}</p>
           </div>
         )}
