@@ -1,15 +1,27 @@
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import { useStore } from '../store/useStore'
+import { voidSale, getAllItems } from '../db/db'
+import { autoSync } from '../lib/sync'
 import { t } from '../i18n'
+import successAnim from '../assets/success.lottie?url'
 
 export default function ReceiptModal() {
-  const { lastSale, setReceiptOpen, lang, businessName } = useStore()
+  const { lastSale, setReceiptOpen, lang, businessName, setItems } = useStore()
   if (!lastSale) return null
 
-  const { ref, date, lines, total, method, cashGiven, change, discount } = lastSale
+  const { id, ref, date, lines, total, method, cashGiven, change, discount } = lastSale
   const isFil = lang === 'fil'
 
   function handleDone() {
+    setReceiptOpen(false)
+  }
+
+  async function handleVoid() {
+    if (!id || !window.confirm(t('voidConfirm', lang))) return
+    await voidSale(id)
+    // Restored stock must show in the catalog right away.
+    setItems(await getAllItems())
+    autoSync()
     setReceiptOpen(false)
   }
 
@@ -17,9 +29,9 @@ export default function ReceiptModal() {
     <div className="fixed inset-0 z-[60] flex flex-col bg-bg overflow-y-auto">
       {/* Success header */}
       <div className="flex flex-col items-center pt-10 pb-6 px-4" style={{ background: 'var(--amber-bg)' }}>
-        <div className="w-24 h-24 -mt-2 mb-1">
+        <div className="w-56 h-56 -mt-6">
           <DotLottieReact
-            src="https://lottie.host/ef627044-9492-4b31-8ddd-5d4d629b47ae/y6zRJctq9s.lottie"
+            src={successAnim}
             autoplay
             loop={false}
           />
@@ -28,7 +40,7 @@ export default function ReceiptModal() {
           {isFil ? 'Bayad na!' : 'Payment received!'}
         </p>
         <p className="text-sm text-muted mt-0.5 font-medium">
-          {method === 'gcash' ? 'GCash' : isFil ? 'Cash' : 'Cash'}
+          {method === 'gcash' ? 'GCash' : 'Cash'}
         </p>
       </div>
 
@@ -124,6 +136,15 @@ export default function ReceiptModal() {
         >
           {isFil ? 'Tapos na' : 'Done'}
         </button>
+        {id && (
+          <button
+            onClick={handleVoid}
+            className="w-full h-11 mt-2 rounded-[14px] font-bold text-sm"
+            style={{ color: 'var(--error)', background: 'var(--error-light)' }}
+          >
+            {t('voidSale', lang)}
+          </button>
+        )}
       </div>
     </div>
   )

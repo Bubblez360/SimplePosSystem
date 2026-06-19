@@ -21,7 +21,10 @@ export default {
         text: 'var(--text)',
         muted: 'var(--text-muted)',
         faint: 'var(--text-faint)',
-        error: 'var(--error)',
+        error: {
+          DEFAULT: 'var(--error)',
+          light: 'var(--error-light)',
+        },
       },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'sans-serif'],

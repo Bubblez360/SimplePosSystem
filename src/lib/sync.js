@@ -1,7 +1,11 @@
 import { supabase } from './supabase'
-import { getDB } from '../db/db'
+import { getDB, syncIdentity, markSyncedByIdentity, hasUnsynced } from '../db/db'
 
 const STORES = ['items', 'categories', 'sales', 'expenses']
+// Money data is append-only and irreplaceable: merge on pull, never wipe.
+const MERGE_STORES = ['sales', 'expenses']
+// Catalog is editable and regenerable: a pull is a "restore from cloud" replace.
+const REPLACE_STORES = ['items', 'categories']
 const LAST_SYNC_KEY = 'lastCloudSync'
 
 export async function pushToCloud(licenseKey) {
@@ -22,6 +26,13 @@ export async function pushToCloud(licenseKey) {
 
   if (result?.syncedAt) localStorage.setItem(LAST_SYNC_KEY, result.syncedAt)
 
+  // Flag exactly the records we just uploaded as synced.
+  const identityMap = {}
+  for (const store of MERGE_STORES) {
+    identityMap[store] = new Set((data[store] || []).map(syncIdentity))
+  }
+  await markSyncedByIdentity(identityMap)
+
   return result.results
 }
 
@@ -38,14 +49,38 @@ export async function pullFromCloud(licenseKey) {
 
   const db = await getDB()
   const grouped = result.data
-  const validStores = STORES.filter(s => Array.isArray(grouped[s]) && grouped[s].length > 0)
 
-  if (validStores.length > 0) {
-    const tx = db.transaction(validStores, 'readwrite')
-    for (const storeName of validStores) {
+  // Catalog: replace from cloud (only when cloud actually has rows, so an
+  // empty cloud snapshot never wipes a freshly-seeded local catalog).
+  const replaceStores = REPLACE_STORES.filter(s => Array.isArray(grouped[s]) && grouped[s].length > 0)
+  if (replaceStores.length > 0) {
+    const tx = db.transaction(replaceStores, 'readwrite')
+    for (const storeName of replaceStores) {
       await tx.objectStore(storeName).clear()
       for (const record of grouped[storeName]) {
         await tx.objectStore(storeName).add(record)
+      }
+    }
+    await tx.done
+  }
+
+  // Money data: merge by identity. Never clear — local-only sales that haven't
+  // uploaded yet must survive. Cloud rows already exist server-side, so they
+  // come in flagged synced. Drop the cloud autoincrement id to avoid keyPath
+  // collisions; identity (uuid/ref) is what dedupes, not the local id.
+  const mergeStores = MERGE_STORES.filter(s => Array.isArray(grouped[s]) && grouped[s].length > 0)
+  if (mergeStores.length > 0) {
+    const tx = db.transaction(mergeStores, 'readwrite')
+    for (const storeName of mergeStores) {
+      const store = tx.objectStore(storeName)
+      const existing = await store.getAll()
+      const seen = new Set(existing.map(syncIdentity))
+      for (const record of grouped[storeName]) {
+        const identity = syncIdentity(record)
+        if (seen.has(identity)) continue
+        seen.add(identity)
+        const { id: _droppedId, ...rest } = record
+        await store.add({ ...rest, synced: true })
       }
     }
     await tx.done
@@ -58,4 +93,43 @@ export async function pullFromCloud(licenseKey) {
 
 export function getLastSyncTime(_licenseKey) {
   return Promise.resolve(localStorage.getItem(LAST_SYNC_KEY) ?? null)
+}
+
+// ── Auto-sync ────────────────────────────────────────────────────────────────
+
+// Push unsynced data to the cloud if conditions allow. Safe to call freely:
+// no-ops when offline, unlicensed, or nothing changed. Never throws — sync is
+// always secondary to the local-first write that already succeeded.
+export async function autoSync() {
+  const licenseKey = localStorage.getItem('licenseKey')
+  if (!licenseKey || !supabase || !navigator.onLine) return false
+  try {
+    if (!(await hasUnsynced())) return false
+    await pushToCloud(licenseKey)
+    return true
+  } catch {
+    // Connection flaky / server down — records stay flagged unsynced and
+    // retry on the next trigger. The sale is already safe in IndexedDB.
+    return false
+  }
+}
+
+// Register automatic sync triggers. Returns a cleanup function.
+// Triggers: connection restored, app refocused, periodic heartbeat, startup.
+export function initAutoSync({ intervalMs = 60_000 } = {}) {
+  const onOnline = () => { autoSync() }
+  const onVisible = () => { if (document.visibilityState === 'visible') autoSync() }
+
+  window.addEventListener('online', onOnline)
+  document.addEventListener('visibilitychange', onVisible)
+  const timer = setInterval(() => { autoSync() }, intervalMs)
+
+  // Attempt once on startup in case sales were made offline last session.
+  autoSync()
+
+  return () => {
+    window.removeEventListener('online', onOnline)
+    document.removeEventListener('visibilitychange', onVisible)
+    clearInterval(timer)
+  }
 }

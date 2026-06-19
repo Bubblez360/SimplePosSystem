@@ -22,6 +22,7 @@
   --text-muted:  #78716C;
   --text-faint:  #A8A29E;
   --error:       #EF4444;
+  --error-light: #FEF2F2;
 }
 
 [data-theme="dark"] {
@@ -39,6 +40,7 @@
   --text-muted:  #A8A29E;
   --text-faint:  #78716C;
   --error:       #F87171;
+  --error-light: #3B1D1D;
 }
 
 * {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './store/useStore'
 import { getAllItems, getAllCategories, getSetting, seedDefaultData } from './db/db'
+import { initAutoSync } from './lib/sync'
 import BottomNav from './components/BottomNav'
 import StickyBar from './components/StickyBar'
 import CheckoutModal from './components/CheckoutModal'
@@ -87,6 +88,9 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  // Auto-sync unsynced sales to the cloud when online / refocused / periodically.
+  useEffect(() => initAutoSync(), [])
 
   function handleCloseOnboarding() {
     localStorage.setItem('hasSeenGuide', '1')

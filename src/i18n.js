@@ -156,6 +156,11 @@ const strings = {
     backupSuccess: 'Backup na-export!',
     restoreSuccess: 'Data na-restore! I-refresh ang app.',
     restoreError: 'Hindi valid ang backup file.',
+    // Void / cancel
+    voidSale: 'Kanselahin ang Benta',
+    voidShort: 'Kanselahin',
+    voidConfirm: 'Kanselahin ang bentang ito? Babalik ang stock at hindi ito mabibilang sa ulat.',
+    voided: 'Kanselado',
   },
   eng: {
     appName: 'TindaPOS',
@@ -314,6 +319,11 @@ const strings = {
     backupSuccess: 'Backup exported!',
     restoreSuccess: 'Data restored! Please refresh the app.',
     restoreError: 'Invalid backup file.',
+    // Void / cancel
+    voidSale: 'Cancel Sale',
+    voidShort: 'Cancel',
+    voidConfirm: "Cancel this sale? Stock will be restored and it won't count in reports.",
+    voided: 'Voided',
   },
 }
 

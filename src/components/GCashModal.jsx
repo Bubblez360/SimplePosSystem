@@ -37,6 +37,7 @@ export default function GCashModal() {
     clearCart()
     setGcashOpen(false)
     setLastSale({
+      id: sale?.id,
       ref: sale?.ref,
       date: new Date().toISOString(),
       lines: saleData.lines,

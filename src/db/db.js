@@ -59,6 +59,37 @@ export async function decrementStock(lines) {
   await tx.done
 }
 
+// Reverse of decrementStock — return qty to stock for tracked items.
+export async function restock(lines) {
+  const db = await getDB()
+  const tx = db.transaction('items', 'readwrite')
+  for (const line of lines) {
+    if (!line.itemId) continue
+    const item = await tx.store.get(line.itemId)
+    if (!item || !item.trackStock) continue
+    await tx.store.put({ ...item, stock: (item.stock ?? 0) + line.qty })
+  }
+  await tx.done
+}
+
+// Soft-cancel a completed sale. Never deletes — keeps an audit trail, restores
+// stock, and flags the change for re-sync. Voided sales are excluded from
+// report totals but still visible (with a count) so abuse is detectable.
+export async function voidSale(id) {
+  const db = await getDB()
+  const sale = await db.get('sales', id)
+  if (!sale || sale.status === 'voided') return sale ?? null
+  const updated = {
+    ...sale,
+    status: 'voided',
+    voidedAt: new Date().toISOString(),
+    synced: false,
+  }
+  await db.put('sales', updated)
+  if (sale.lines?.length) await restock(sale.lines)
+  return updated
+}
+
 // Categories
 export async function getAllCategories() {
   const db = await getDB()
@@ -84,16 +115,34 @@ export function generateRef() {
   return `${now.getFullYear().toString().slice(2)}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
 }
 
+// Globally-unique id for a record, stable across devices/re-sync.
+// Falls back for old Android WebViews without crypto.randomUUID.
+function newUUID() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+// Stable identity used to dedupe records during sync. uuid for new records,
+// ref/id fallback for legacy records created before uuid existed.
+export function syncIdentity(rec) {
+  return rec.uuid || (rec.ref ? `ref:${rec.ref}` : `id:${rec.id}`)
+}
+
 export async function recordSale(sale) {
   const db = await getDB()
   const ref = generateRef()
   const date = new Date().toISOString()
-  const id = await db.add('sales', { ...sale, ref, date })
+  const uuid = newUUID()
+  const id = await db.add('sales', { ...sale, ref, date, uuid, synced: false })
   // Decrement stock for items that track it
   if (sale.lines?.length) {
     await decrementStock(sale.lines)
   }
-  return { id, ref, date }
+  return { id, ref, date, uuid }
 }
 
 export async function getTodaySales() {
@@ -141,6 +190,8 @@ export async function addExpense(expense) {
     name: expense.name || '',
     amount: parseFloat(expense.amount) || 0,
     date: new Date().toISOString(),
+    uuid: newUUID(),
+    synced: false,
   }
   const id = await db.add('expenses', record)
   return { ...record, id }
@@ -280,6 +331,41 @@ export async function getSetting(key) {
 export async function setSetting(key, value) {
   const db = await getDB()
   return db.put('settings', value, key)
+}
+
+// Sync bookkeeping ───────────────────────────────────────────────────────────
+const SYNCABLE_STORES = ['sales', 'expenses']
+
+// True if any record in the given stores still needs uploading.
+// Legacy records (synced === undefined) are treated as already synced so we
+// don't re-push a vendor's entire history on first run after upgrade.
+export async function hasUnsynced(storeNames = SYNCABLE_STORES) {
+  const db = await getDB()
+  for (const store of storeNames) {
+    const all = await db.getAll(store)
+    if (all.some(r => r.synced === false)) return true
+  }
+  return false
+}
+
+// Mark records as synced, but only the ones that were actually pushed
+// (matched by stable identity). Avoids a race where a sale made mid-push
+// gets flagged synced without ever being uploaded.
+export async function markSyncedByIdentity(identityMap) {
+  const stores = Object.keys(identityMap)
+  const db = await getDB()
+  const tx = db.transaction(stores, 'readwrite')
+  for (const store of stores) {
+    const ids = identityMap[store]
+    const objStore = tx.objectStore(store)
+    const all = await objStore.getAll()
+    for (const rec of all) {
+      if (rec.synced === false && ids.has(syncIdentity(rec))) {
+        await objStore.put({ ...rec, synced: true })
+      }
+    }
+  }
+  await tx.done
 }
 
 // Backup & Restore

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { getCurrentShift, openShift, closeShift, getTodaySales } from '../db/db'
+import { autoSync } from '../lib/sync'
 import { t } from '../i18n'
 
 export default function ShiftModal() {
@@ -32,6 +33,8 @@ export default function ShiftModal() {
     setSummary(record)
     setCurrentShift(null)
     setLoading(false)
+    // Back up the day's sales on shift close (fire-and-forget, never blocks).
+    autoSync()
   }
 
   return (
