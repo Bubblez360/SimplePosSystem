@@ -84,6 +84,7 @@ export default function CheckoutModal() {
     setCashGiven('')
     setCheckoutOpen(false)
     setLastSale({
+      id: sale?.id,
       ref: sale?.ref,
       date: new Date().toISOString(),
       lines: saleData.lines,

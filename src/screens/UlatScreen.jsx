@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore'
 import {
   getTodaySales, getWeeklySales, getYearlySales,
   getTodayExpenses, getWeeklyExpenses, getYearlyExpenses,
-  addExpense, deleteExpense,
+  addExpense, deleteExpense, voidSale, getAllItems,
 } from '../db/db'
 import { t } from '../i18n'
 
@@ -138,7 +138,7 @@ function GastosSection({ expenses, lang, onAdd, onDelete }) {
 }
 
 export default function UlatScreen() {
-  const { lang, items, categories, businessName } = useStore()
+  const { lang, items, categories, businessName, setItems } = useStore()
   const [period, setPeriod] = useState('today')
   const [sales, setSales] = useState([])
   const [expenses, setExpenses] = useState([])
@@ -158,19 +158,30 @@ export default function UlatScreen() {
     await deleteExpense(id)
     EXPENSE_LOADERS[period]().then(setExpenses)
   }
+  async function handleVoidSale(id) {
+    if (!window.confirm(t('voidConfirm', lang))) return
+    await voidSale(id)
+    SALES_LOADERS[period]().then(setSales)
+    setItems(await getAllItems()) // reflect restored stock
+  }
+
+  // Voided sales stay visible in the transaction list but never count toward
+  // totals, charts, or best sellers.
+  const activeSales = useMemo(() => sales.filter(s => s.status !== 'voided'), [sales])
+  const voidedCount = sales.length - activeSales.length
 
   // ── Derived metrics ──────────────────────────────────────────────────────────
-  const total = useMemo(() => sales.reduce((s, x) => s + x.total, 0), [sales])
-  const cashTotal = useMemo(() => sales.filter(s => s.method === 'cash').reduce((s, x) => s + x.total, 0), [sales])
-  const gcashTotal = useMemo(() => sales.filter(s => s.method === 'gcash').reduce((s, x) => s + x.total, 0), [sales])
+  const total = useMemo(() => activeSales.reduce((s, x) => s + x.total, 0), [activeSales])
+  const cashTotal = useMemo(() => activeSales.filter(s => s.method === 'cash').reduce((s, x) => s + x.total, 0), [activeSales])
+  const gcashTotal = useMemo(() => activeSales.filter(s => s.method === 'gcash').reduce((s, x) => s + x.total, 0), [activeSales])
   const gastosTotal = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses])
   const kita = total - gastosTotal
-  const avgOrder = sales.length > 0 ? total / sales.length : 0
+  const avgOrder = activeSales.length > 0 ? total / activeSales.length : 0
 
   // ── Best sellers ─────────────────────────────────────────────────────────────
   const bestSellers = useMemo(() => {
     const map = {}
-    for (const sale of sales) {
+    for (const sale of activeSales) {
       for (const line of (sale.lines || [])) {
         if (!map[line.name]) map[line.name] = { qty: 0, revenue: 0 }
         map[line.name].qty += line.qty
@@ -178,7 +189,7 @@ export default function UlatScreen() {
       }
     }
     return Object.entries(map).sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 6)
-  }, [sales])
+  }, [activeSales])
 
   // ── Category breakdown ───────────────────────────────────────────────────────
   const categoryData = useMemo(() => {
@@ -190,7 +201,7 @@ export default function UlatScreen() {
       }
     }
     const map = {}
-    for (const sale of sales) {
+    for (const sale of activeSales) {
       for (const line of (sale.lines || [])) {
         const cat = itemCatMap[line.name]
         const key = cat ? `${cat.emoji || ''} ${cat.name}` : (lang === 'fil' ? 'Iba pa' : 'Others')
@@ -199,13 +210,13 @@ export default function UlatScreen() {
       }
     }
     return Object.entries(map).sort((a, b) => b[1] - a[1])
-  }, [sales, items, categories, lang])
+  }, [activeSales, items, categories, lang])
 
   // ── Time chart ───────────────────────────────────────────────────────────────
   const timeChart = useMemo(() => {
     if (period === 'today') {
       const hours = Array(24).fill(0)
-      for (const sale of sales) hours[new Date(sale.date).getHours()] += sale.total
+      for (const sale of activeSales) hours[new Date(sale.date).getHours()] += sale.total
       return hours.slice(6, 23).map((v, i) => {
         const h = i + 6
         return { label: h === 12 ? '12p' : h < 12 ? `${h}a` : `${h - 12}p`, value: v }
@@ -216,16 +227,16 @@ export default function UlatScreen() {
         ? ['Lin', 'Lun', 'Mar', 'Miy', 'Huw', 'Biy', 'Sab']
         : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
       const vals = Array(7).fill(0)
-      for (const sale of sales) vals[new Date(sale.date).getDay()] += sale.total
+      for (const sale of activeSales) vals[new Date(sale.date).getDay()] += sale.total
       return labels.map((label, i) => ({ label, value: vals[i] }))
     }
     const monthLabels = lang === 'fil'
       ? ['Ene','Peb','Mar','Abr','May','Hun','Hul','Ago','Set','Okt','Nob','Dis']
       : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     const vals = Array(12).fill(0)
-    for (const sale of sales) vals[new Date(sale.date).getMonth()] += sale.total
+    for (const sale of activeSales) vals[new Date(sale.date).getMonth()] += sale.total
     return monthLabels.map((label, i) => ({ label, value: vals[i] }))
-  }, [sales, period, lang])
+  }, [activeSales, period, lang])
 
   const maxBar = Math.max(...timeChart.map(d => d.value), 1)
   const maxSeller = bestSellers.length > 0 ? bestSellers[0][1].revenue : 1
@@ -244,8 +255,8 @@ export default function UlatScreen() {
       <header className="sticky top-0 bg-surface border-b border-border z-10 px-4 pt-3 pb-0">
         <div className="flex items-center justify-between mb-3">
           <p className="text-lg font-extrabold text-text">{t('ulat', lang)}</p>
-          {sales.length > 0 && (
-            <button onClick={() => exportCSV(sales, lang, period, expenses, businessName)}
+          {activeSales.length > 0 && (
+            <button onClick={() => exportCSV(activeSales, lang, period, expenses, businessName)}
               className="h-8 px-3 rounded-btn border border-border bg-surface text-xs font-bold text-muted flex items-center gap-1.5">
               <span>📥</span> CSV
             </button>
@@ -269,7 +280,7 @@ export default function UlatScreen() {
               }`}>
               {v === 'analytics'
                 ? `📊 ${t('analyticsTab', lang)}`
-                : `🧾 ${t('transactionsTab', lang)}${sales.length > 0 ? ` (${sales.length})` : ''}`}
+                : `🧾 ${t('transactionsTab', lang)}${activeSales.length > 0 ? ` (${activeSales.length})` : ''}`}
             </button>
           ))}
         </div>
@@ -293,7 +304,7 @@ export default function UlatScreen() {
             <div className="flex items-center gap-4 mt-3">
               <div>
                 <p className="text-white/60 text-[10px] font-bold uppercase tracking-wide">{t('transactions', lang)}</p>
-                <p className="text-white font-extrabold text-xl leading-none">{sales.length}</p>
+                <p className="text-white font-extrabold text-xl leading-none">{activeSales.length}</p>
               </div>
               {avgOrder > 0 && (
                 <div>
@@ -450,8 +461,9 @@ export default function UlatScreen() {
           <div className="flex flex-col gap-2">
             {[...sales].reverse().map(sale => {
               const isOpen = expanded === sale.id
+              const isVoided = sale.status === 'voided'
               return (
-                <div key={sale.id} className="bg-surface border border-border rounded-card overflow-hidden">
+                <div key={sale.id} className={`bg-surface border border-border rounded-card overflow-hidden ${isVoided ? 'opacity-60' : ''}`}>
                   <button
                     onClick={() => setExpanded(prev => prev === sale.id ? null : sale.id)}
                     className="w-full flex items-center justify-between px-3 py-3 text-left">
@@ -459,11 +471,17 @@ export default function UlatScreen() {
                       <span className="text-[10px] font-mono font-bold text-faint bg-surface-2 border border-border rounded px-1.5 py-0.5 flex-shrink-0">
                         {sale.ref || '—'}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                        sale.method === 'gcash' ? 'bg-green-light text-green' : 'bg-surface-2 text-muted'
-                      }`}>
-                        {sale.method === 'gcash' ? 'GCash' : 'Cash'}
-                      </span>
+                      {isVoided ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 bg-error-light text-error uppercase tracking-wide">
+                          {t('voided', lang)}
+                        </span>
+                      ) : (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                          sale.method === 'gcash' ? 'bg-green-light text-green' : 'bg-surface-2 text-muted'
+                        }`}>
+                          {sale.method === 'gcash' ? 'GCash' : 'Cash'}
+                        </span>
+                      )}
                       <span className="text-xs text-muted truncate">
                         {new Date(sale.date).toLocaleString(lang === 'fil' ? 'fil-PH' : 'en-PH', {
                           month: period === 'today' ? undefined : 'short',
@@ -473,7 +491,7 @@ export default function UlatScreen() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                      <span className="font-mono font-medium text-text text-sm">₱{sale.total.toFixed(2)}</span>
+                      <span className={`font-mono font-medium text-sm ${isVoided ? 'text-faint line-through' : 'text-text'}`}>₱{sale.total.toFixed(2)}</span>
                       <span className={`text-faint text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
                     </div>
                   </button>
@@ -505,6 +523,13 @@ export default function UlatScreen() {
                         <span className="text-xs font-bold text-muted">{t('totalAmount', lang)}</span>
                         <span className="font-mono text-sm font-bold text-amber-dark">₱{sale.total.toFixed(2)}</span>
                       </div>
+                      {!isVoided && (
+                        <button
+                          onClick={() => handleVoidSale(sale.id)}
+                          className="mt-2 h-9 rounded-lg font-bold text-xs bg-error-light text-error">
+                          {t('voidSale', lang)}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
