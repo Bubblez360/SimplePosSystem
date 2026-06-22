@@ -585,7 +585,7 @@ export default function SettingScreen() {
                 right={<IcoChevron />}
                 onClick={() => setHelpOpen(true)}
               />
-              <a href="https://kingnoob3605.github.io/SimplePosSystem/" target="_blank" rel="noopener noreferrer">
+              <a href="https://bubblez360.github.io/SimplePosSystem/" target="_blank" rel="noopener noreferrer">
                 <SettingRow
                   icon={<IcoBook />}
                   iconBg="bg-surface-2 text-muted"

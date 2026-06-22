@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { HELP } from '../data/help'
 
-const GUIDE_URL = 'https://kingnoob3605.github.io/SimplePosSystem/'
+const GUIDE_URL = 'https://bubblez360.github.io/SimplePosSystem/'
 
 export default function HelpModal() {
   const { lang, setHelpOpen } = useStore()
