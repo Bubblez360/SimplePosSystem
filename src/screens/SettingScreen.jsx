@@ -5,7 +5,8 @@ import { useStore } from '../store/useStore'
 import { getSetting, setSetting, getAllCategories, saveCategory, deleteCategory, exportAllData, importAllData } from '../db/db'
 import { connectPrinter, disconnectPrinter, isSupported as printerSupported } from '../utils/printer'
 import { validateLicense, getCachedLicense, clearLicense, retrieveLicenseByEmail } from '../lib/license'
-import { pushToCloud, pullFromCloud, getLastSyncTime } from '../lib/sync'
+import { pushToCloud, pullFromCloud, noteSyncResult } from '../lib/sync'
+import SyncStatus from '../components/SyncStatus'
 import { t } from '../i18n'
 
 const PAYMONGO_TRIAL_URL = 'https://pm.link/org-sYFHfsE6iaYeziwvXQQ4fiyP/FsgQoez'
@@ -77,7 +78,6 @@ export default function SettingScreen() {
   const [licenseInput, setLicenseInput] = useState(licenseKey)
   const [licenseLoading, setLicenseLoading] = useState(false)
   const [syncLoading, setSyncLoading] = useState(false)
-  const [lastSync, setLastSync] = useState(null)
   const [emailInput, setEmailInput] = useState('')
   const [retrieveLoading, setRetrieveLoading] = useState(false)
   const [trialUsed, setTrialUsed] = useState(() => localStorage.getItem('tindapos_trial_used') === '1')
@@ -91,7 +91,6 @@ export default function SettingScreen() {
       setIsPremium(true)
       if (cached.key) setLicenseKey(cached.key)
     }
-    if (licenseKey) getLastSyncTime(licenseKey).then(setLastSync).catch(() => {})
   }, [])
 
   async function handleActivateLicense() {
@@ -107,7 +106,6 @@ export default function SettingScreen() {
         setTrialUsed(true)
       }
       showToast(lang === 'fil' ? 'Premium na-activate! 🎉' : 'Premium activated! 🎉')
-      getLastSyncTime(licenseInput.trim()).then(setLastSync).catch(() => {})
     } else {
       showToast(result.error || (lang === 'fil' ? 'Invalid na license key' : 'Invalid license key'))
     }
@@ -140,9 +138,9 @@ export default function SettingScreen() {
     setSyncLoading('push')
     try {
       await pushToCloud(licenseKey)
-      setLastSync(new Date().toISOString())
       showToast(lang === 'fil' ? 'Na-sync sa cloud! ☁️' : 'Synced to cloud! ☁️')
-    } catch {
+    } catch (err) {
+      noteSyncResult(err?.message || 'Sync failed')
       showToast(lang === 'fil' ? 'Hindi na-sync. Subukan ulit.' : 'Sync failed. Try again.')
     }
     setSyncLoading(false)
@@ -159,7 +157,8 @@ export default function SettingScreen() {
       const { restored } = await pullFromCloud(licenseKey)
       showToast(lang === 'fil' ? `Na-restore ang ${restored} records mula cloud!` : `Restored ${restored} records from cloud!`)
       window.location.reload()
-    } catch {
+    } catch (err) {
+      noteSyncResult(err?.message || 'Restore failed')
       showToast(lang === 'fil' ? 'Hindi ma-restore. Subukan ulit.' : 'Restore failed. Try again.')
     }
     setSyncLoading(false)
@@ -452,7 +451,7 @@ export default function SettingScreen() {
                 <div className="p-4 flex flex-col gap-2.5">
                   <div className="px-3 py-3 bg-amber-light border border-amber rounded-card">
                     <p className="text-sm font-bold text-amber-dark">☁️ Cloud Sync</p>
-                    {lastSync && <p className="text-[10px] text-amber-dark opacity-70 mt-0.5">{lang === 'fil' ? 'Huling sync:' : 'Last sync:'} {new Date(lastSync).toLocaleString(lang === 'fil' ? 'fil-PH' : 'en-PH')}</p>}
+                    <SyncStatus lang={lang} />
                   </div>
                   <button onClick={handlePushSync} disabled={!!syncLoading} className="w-full h-12 rounded-btn bg-amber text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer">
                     {syncLoading === 'push' ? '⏳' : '☁️'} {lang === 'fil' ? 'I-sync sa Cloud' : 'Sync to Cloud'}

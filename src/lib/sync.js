@@ -7,6 +7,22 @@ const MERGE_STORES = ['sales', 'expenses']
 // Catalog is editable and regenerable: a pull is a "restore from cloud" replace.
 const REPLACE_STORES = ['items', 'categories']
 const LAST_SYNC_KEY = 'lastCloudSync'
+const SYNC_ERROR_KEY = 'lastSyncError'
+
+// Fired whenever sync state changes (success or failure) so the UI can refresh.
+export const SYNC_CHANGED_EVENT = 'tindapos:sync-changed'
+
+export function getSyncError() {
+  return localStorage.getItem(SYNC_ERROR_KEY)
+}
+
+// Record the outcome of a sync attempt so it surfaces in the UI instead of
+// being silently swallowed. Pass null on success to clear a prior error.
+export function noteSyncResult(error) {
+  if (error) localStorage.setItem(SYNC_ERROR_KEY, String(error))
+  else localStorage.removeItem(SYNC_ERROR_KEY)
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(SYNC_CHANGED_EVENT))
+}
 
 export async function pushToCloud(licenseKey) {
   if (!supabase) throw new Error('Supabase not configured')
@@ -33,6 +49,7 @@ export async function pushToCloud(licenseKey) {
   }
   await markSyncedByIdentity(identityMap)
 
+  noteSyncResult(null)
   return result.results
 }
 
@@ -88,6 +105,7 @@ export async function pullFromCloud(licenseKey) {
 
   if (result.lastSyncAt) localStorage.setItem(LAST_SYNC_KEY, result.lastSyncAt)
 
+  noteSyncResult(null)
   return { restored: result.restored }
 }
 
@@ -107,9 +125,11 @@ export async function autoSync() {
     if (!(await hasUnsynced())) return false
     await pushToCloud(licenseKey)
     return true
-  } catch {
+  } catch (err) {
     // Connection flaky / server down — records stay flagged unsynced and
     // retry on the next trigger. The sale is already safe in IndexedDB.
+    // Surface the failure (no longer silent) so the UI can show it.
+    noteSyncResult(err?.message || 'Sync failed')
     return false
   }
 }
