@@ -10,6 +10,7 @@ import VariantPickerModal from './components/VariantPickerModal'
 import ReceiptModal from './components/ReceiptModal'
 import InstallPrompt from './components/InstallPrompt'
 import ShiftModal from './components/ShiftModal'
+import HelpModal from './components/HelpModal'
 import BentaScreen from './screens/BentaScreen'
 import MenuScreen from './screens/MenuScreen'
 import UlatScreen from './screens/UlatScreen'
@@ -73,7 +74,7 @@ const SCREENS = {
 }
 
 export default function App() {
-  const { screen, setItems, setCategories, setGcashQR, setLogo, theme, checkoutOpen, gcashOpen, variantPickerItem, receiptOpen, shiftModalOpen, lang } = useStore()
+  const { screen, setItems, setCategories, setGcashQR, setLogo, theme, checkoutOpen, gcashOpen, variantPickerItem, receiptOpen, shiftModalOpen, helpOpen, lang } = useStore()
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('hasSeenGuide'))
 
   useEffect(() => {
@@ -115,6 +116,7 @@ export default function App() {
       {gcashOpen && <GCashModal />}
       {receiptOpen && <ReceiptModal />}
       {shiftModalOpen && <ShiftModal />}
+      {helpOpen && <HelpModal />}
       <InstallPrompt />
       {showOnboarding && <OnboardingModal lang={lang} onClose={handleCloseOnboarding} />}
     </div>

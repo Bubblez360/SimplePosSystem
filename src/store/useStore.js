@@ -60,6 +60,8 @@ export const useStore = create((set, get) => ({
   setVariantPickerItem: (item) => set({ variantPickerItem: item }),
   receiptOpen: false,
   setReceiptOpen: (v) => set({ receiptOpen: v }),
+  helpOpen: false,
+  setHelpOpen: (v) => set({ helpOpen: v }),
   lastSale: null,
   setLastSale: (sale) => set({ lastSale: sale }),
 
