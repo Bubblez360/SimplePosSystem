@@ -59,7 +59,7 @@ function SegControl({ options, value, onChange }) {
 }
 
 export default function SettingScreen() {
-  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected, currentShift, setShiftModalOpen, logo, setLogo, theme, setTheme, isPremium, setIsPremium, licenseKey, setLicenseKey } = useStore()
+  const { lang, setLang, businessName, setBusinessName, gcashQR, setGcashQR, categories, setCategories, printerConnected, setPrinterConnected, currentShift, setShiftModalOpen, logo, setLogo, theme, setTheme, isPremium, setIsPremium, licenseKey, setLicenseKey, setHelpOpen } = useStore()
   const [nameInput, setNameInput] = useState(businessName)
   const [newCatName, setNewCatName] = useState('')
   const [newCatEmoji, setNewCatEmoji] = useState('🍱')
@@ -577,6 +577,14 @@ export default function SettingScreen() {
                 <IcoChevron />
                 <input type="file" accept=".json" className="hidden" onChange={handleImportBackup} disabled={restoring} />
               </label>
+              <SettingRow
+                icon={<IcoBook />}
+                iconBg="bg-surface-2 text-muted"
+                label={lang === 'fil' ? 'Tulong' : 'Help'}
+                sub={lang === 'fil' ? 'Mga madalas na tanong' : 'Frequently asked questions'}
+                right={<IcoChevron />}
+                onClick={() => setHelpOpen(true)}
+              />
               <a href="https://kingnoob3605.github.io/SimplePosSystem/" target="_blank" rel="noopener noreferrer">
                 <SettingRow
                   icon={<IcoBook />}
