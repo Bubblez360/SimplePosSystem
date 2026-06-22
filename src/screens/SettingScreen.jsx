@@ -150,7 +150,9 @@ export default function SettingScreen() {
 
   async function handlePullSync() {
     if (!licenseKey) return
-    const msg = lang === 'fil' ? 'Papalitan nito ang lahat ng local data. Sigurado ka ba?' : 'This will replace all local data with cloud data. Are you sure?'
+    const msg = lang === 'fil'
+      ? 'Papalitan ang menu/items mula sa cloud. Hindi mawawala ang mga benta — isasama lang ang mga wala pa. Ituloy?'
+      : 'Your menu/items will be replaced with the cloud copy. Sales are never lost — missing ones are merged in. Continue?'
     if (!window.confirm(msg)) return
     setSyncLoading('pull')
     try {
