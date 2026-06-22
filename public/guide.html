@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#F59E0B" />
+  <title>TindaPOS — Gabay / User Guide</title>
+  <meta name="description" content="Simpleng gabay sa paggamit ng TindaPOS para sa tindero't tindera. Step-by-step na may larawan." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber:       #F59E0B;
+      --amber-dark:  #D97706;
+      --amber-light: #FEF3C7;
+      --amber-bg:    #FFFBEB;
+      --green:       #16A34A;
+      --green-light: #DCFCE7;
+      --bg:          #FAFAF7;
+      --surface:     #FFFFFF;
+      --surface-2:   #F5F5F0;
+      --border:      #E7E5E4;
+      --text:        #1C1917;
+      --muted:       #6B6560;
+      --faint:       #A8A29E;
+
+      --maxw: 680px;
+      --r-card: 18px;
+      --r-btn: 14px;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .mono { font-family: 'DM Mono', monospace; font-variant-numeric: tabular-nums; }
+
+    /* ---------- Top bar ---------- */
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(250,250,247,0.85);
+      backdrop-filter: saturate(160%) blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      max-width: var(--maxw); margin: 0 auto;
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 9px;
+      font-weight: 800; font-size: 16px; letter-spacing: -0.02em;
+    }
+    .brand .mark {
+      width: 30px; height: 30px; border-radius: 9px;
+      background: var(--amber); color: #fff;
+      display: grid; place-items: center; font-size: 17px;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.35);
+    }
+    .brand small { color: var(--muted); font-weight: 600; font-size: 12px; }
+    .app-link {
+      margin-left: auto; text-decoration: none;
+      background: var(--amber); color: #fff; font-weight: 700; font-size: 13px;
+      padding: 8px 14px; border-radius: 999px; white-space: nowrap;
+      box-shadow: 0 2px 10px rgba(245,158,11,0.3);
+      transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+    }
+    .app-link:active { transform: scale(0.96); }
+
+    /* ---------- Section nav chips ---------- */
+    .chips {
+      position: sticky; top: 55px; z-index: 40;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .chips-scroll {
+      max-width: var(--maxw); margin: 0 auto;
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 11px 18px; scrollbar-width: none;
+    }
+    .chips-scroll::-webkit-scrollbar { display: none; }
+    .chip {
+      flex: 0 0 auto; text-decoration: none;
+      font-size: 13px; font-weight: 700; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 7px 14px; border-radius: 999px;
+      transition: all .15s var(--ease);
+    }
+    .chip:active { transform: scale(0.95); }
+    .chip.is-active { background: var(--amber-light); color: var(--amber-dark); border-color: var(--amber); }
+
+    /* ---------- Layout ---------- */
+    main { max-width: var(--maxw); margin: 0 auto; padding: 0 18px 80px; }
+
+    .hero { padding: 40px 0 20px; }
+    .hero h1 {
+      font-size: clamp(2rem, 7vw, 3rem); font-weight: 800;
+      letter-spacing: -0.035em; line-height: 1.05; text-wrap: balance;
+    }
+    .hero h1 .accent { color: var(--amber-dark); }
+    .hero p { margin-top: 14px; font-size: 16px; color: var(--muted); max-width: 46ch; }
+    .hero .meta {
+      margin-top: 18px; display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 600; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 7px 13px; border-radius: 999px;
+    }
+    .hero .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+    section.step-group { padding: 34px 0 8px; scroll-margin-top: 110px; }
+    .sect-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+    .sect-num {
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+      color: var(--amber-dark); background: var(--amber-light);
+      width: 30px; height: 30px; border-radius: 9px;
+      display: grid; place-items: center; flex: 0 0 auto;
+      align-self: center;
+    }
+    .sect-head h2 { font-size: 23px; font-weight: 800; letter-spacing: -0.02em; }
+    .sect-sub { color: var(--muted); font-size: 14px; margin: 2px 0 22px 42px; }
+
+    /* ---------- Step ---------- */
+    .step { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 30px; }
+    @media (min-width: 620px) {
+      .step { grid-template-columns: 1fr 240px; align-items: center; }
+      .step.flip .copy { order: 2; }
+    }
+    .step .copy { align-self: center; }
+    .step .pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 700; color: var(--amber-dark);
+      margin-bottom: 8px;
+    }
+    .step .pill b {
+      font-family: 'DM Mono', monospace;
+      background: var(--amber); color: #fff;
+      width: 22px; height: 22px; border-radius: 7px;
+      display: grid; place-items: center; font-size: 12px; font-weight: 500;
+    }
+    .step h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+    .step p { color: var(--muted); font-size: 14.5px; margin-top: 5px; }
+    .step .en { display: block; color: var(--faint); font-size: 13px; margin-top: 3px; }
+    .step .tip {
+      margin-top: 10px; font-size: 13px; color: var(--text);
+      background: var(--amber-bg); border: 1px solid var(--amber-light);
+      padding: 9px 12px; border-radius: 11px;
+    }
+    .step .tip.green { background: var(--green-light); border-color: #bbf7d0; }
+
+    /* ---------- Screenshot slot (phone frame) ---------- */
+    .shot {
+      justify-self: center;
+      width: 100%; max-width: 240px; aspect-ratio: 9 / 17;
+      background: var(--surface-2);
+      border: 2px dashed var(--border); border-radius: 26px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; text-align: center; padding: 18px; color: var(--faint);
+      position: relative; overflow: hidden;
+    }
+    .shot::before {
+      content: ''; position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+      width: 46px; height: 4px; border-radius: 4px; background: var(--border);
+    }
+    .shot .cam { font-size: 26px; opacity: .8; }
+    .shot .lbl { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .shot .hint { font-size: 11px; }
+    .shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 24px; }
+
+    /* ---------- Features grid ---------- */
+    .features { padding: 30px 0 0; }
+    .feat-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 18px; }
+    .feat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px;
+    }
+    .feat .ic { font-size: 20px; }
+    .feat h4 { font-size: 14px; font-weight: 700; margin-top: 7px; }
+    .feat p { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+    /* ---------- Footer ---------- */
+    footer { max-width: var(--maxw); margin: 0 auto; padding: 40px 18px 60px; text-align: center; }
+    footer .cta {
+      display: inline-block; text-decoration: none;
+      background: var(--amber); color: #fff; font-weight: 800; font-size: 15px;
+      padding: 14px 28px; border-radius: var(--r-btn);
+      box-shadow: 0 6px 22px rgba(245,158,11,0.35);
+      transition: transform .15s var(--ease);
+    }
+    footer .cta:active { transform: scale(0.97); }
+    footer .small { margin-top: 18px; color: var(--faint); font-size: 12px; }
+
+    /* ---------- Reveal motion ---------- */
+    .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="mark">🏪</span>
+        <span>TindaPOS <small>· Gabay</small></span>
+      </div>
+      <a class="app-link" href="https://bubblez360.github.io/SimplePosSystem/">Buksan ang App →</a>
+    </div>
+  </header>
+
+  <nav class="chips" aria-label="Mga seksyon">
+    <div class="chips-scroll">
+      <a class="chip" href="#simula">Simula</a>
+      <a class="chip" href="#item">Mga Item</a>
+      <a class="chip" href="#benta">Benta</a>
+      <a class="chip" href="#void">Kanselahin</a>
+      <a class="chip" href="#shift">Shift</a>
+      <a class="chip" href="#ulat">Ulat</a>
+      <a class="chip" href="#cloud">Cloud</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero reveal">
+      <h1>Paano gamitin ang <span class="accent">TindaPOS</span></h1>
+      <p>Simpleng gabay para sa tindero't tindera. Sundan lang ang mga hakbang — may larawan bawat isa. <span style="color:var(--faint)">A simple step-by-step guide.</span></p>
+      <div class="meta"><span class="dot"></span> Gumagana kahit walang internet</div>
+    </div>
+
+    <!-- 1. SETUP -->
+    <section id="simula" class="step-group">
+      <div class="sect-head"><span class="sect-num">1</span><h2>Simula</h2></div>
+      <p class="sect-sub">I-setup ang tindahan mo — isang beses lang. <span style="color:var(--faint)">First-time setup.</span></p>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>a</b> Settings → Tindahan</span>
+          <h3>Pangalan at logo ng tindahan</h3>
+          <p>Pumunta sa <strong>Settings</strong> tab → ilagay ang <strong>Pangalan ng Negosyo</strong> at mag-upload ng logo.
+            <span class="en">Settings → Business Name + Logo.</span></p>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Settings — Tindahan</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+
+      <div class="step flip reveal">
+        <div class="copy">
+          <span class="pill"><b>b</b> Settings → GCash QR</span>
+          <h3>I-upload ang GCash QR mo</h3>
+          <p>I-screenshot ang QR mula sa GCash app, tapos i-upload sa <strong>Settings → GCash QR</strong>. Lalabas ito sa customer kapag GCash ang bayad.
+            <span class="en">Upload your GCash QR screenshot.</span></p>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: GCash QR upload</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+    </section>
+
+    <!-- 2. MENU -->
+    <section id="item" class="step-group">
+      <div class="sect-head"><span class="sect-num">2</span><h2>Mga Item</h2></div>
+      <p class="sect-sub">Idagdag ang mga binebenta mo. <span style="color:var(--faint)">Build your menu.</span></p>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>a</b> Menu → +</span>
+          <h3>Magdagdag ng item</h3>
+          <p>Sa <strong>Menu</strong> tab, pindutin ang <strong>+</strong>. Ilagay ang pangalan at presyo. Pwede ring maglagay ng <strong>variants</strong> (Small/Medium), <strong>add-ons</strong>, at litrato. Pindutin <strong>I-save</strong>.
+            <span class="en">Menu tab → + → name, price, optional variants/add-ons/photo → Save.</span></p>
+          <div class="tip">💡 Walang litrato? Okay lang — may emoji na default.</div>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Add item form</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+    </section>
+
+    <!-- 3. SELLING -->
+    <section id="benta" class="step-group">
+      <div class="sect-head"><span class="sect-num">3</span><h2>Benta</h2></div>
+      <p class="sect-sub">Pagbebenta at pagbayad. <span style="color:var(--faint)">Taking an order &amp; checkout.</span></p>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>a</b> Benta tab</span>
+          <h3>Pindutin ang mga item</h3>
+          <p>Sa <strong>Benta</strong> tab, pindutin ang item para idagdag sa order. Makikita sa baba ang kabuuan. Pindutin <strong>"Bayad na"</strong> kapag tapos na.
+            <span class="en">Tap items → see total at the bottom → "Bayad na".</span></p>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Benta + cart</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+
+      <div class="step flip reveal">
+        <div class="copy">
+          <span class="pill"><b>b</b> Cash</span>
+          <h3>Bayad na Cash</h3>
+          <p>Piliin ang <strong>Cash</strong> → ilagay ang ibinigay na pera → awtomatikong lalabas ang <strong class="mono">sukli</strong> → pindutin <strong>"Nabayaran na"</strong>.
+            <span class="en">Choose Cash → enter cash given → change shows → confirm.</span></p>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Cash + sukli</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>c</b> GCash</span>
+          <h3>Bayad na GCash</h3>
+          <p>Piliin ang <strong>GCash</strong> → ipakita ang QR sa customer para i-scan → kapag nakabayad na, pindutin <strong>"Nabayaran na"</strong>.
+            <span class="en">Choose GCash → show QR → confirm once paid.</span></p>
+          <div class="tip green">✅ Resibo lalabas pagkatapos. Pwede i-print kung may thermal printer.</div>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: GCash QR screen</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+    </section>
+
+    <!-- 4. VOID -->
+    <section id="void" class="step-group">
+      <div class="sect-head"><span class="sect-num">4</span><h2>Kanselahin</h2></div>
+      <p class="sect-sub">Kung nagbago ang isip ng customer. <span style="color:var(--faint)">Cancel / void a sale.</span></p>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>a</b> Resibo / Ulat</span>
+          <h3>Kanselahin ang benta</h3>
+          <p>Sa <strong>resibo</strong> pagkatapos magbayad, pindutin <strong>"Kanselahin ang Benta"</strong>. O pumunta sa <strong>Ulat → Transaksyon</strong>, piliin ang benta, tapos kanselahin.
+            <span class="en">On the receipt or in Ulat → Transactions → Cancel Sale.</span></p>
+          <div class="tip">↩️ Babalik ang stock, at hindi ito mabibilang sa ulat. Pero makikita pa rin na "Kanselado".</div>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Cancel sale</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+
+      <div class="step flip reveal">
+        <div class="copy">
+          <span class="pill"><b>b</b> Dagdag item</span>
+          <h3>Gustong magdagdag pagkatapos?</h3>
+          <p>Hindi pwedeng i-edit ang tapos nang benta. Mag-ring na lang ng <strong>bagong benta</strong> para sa dagdag, o kanselahin ang luma at ulitin nang tama.
+            <span class="en">Completed sales can't be edited — ring a new sale or void &amp; re-ring.</span></p>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Bagong benta</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+    </section>
+
+    <!-- 5. SHIFT -->
+    <section id="shift" class="step-group">
+      <div class="sect-head"><span class="sect-num">5</span><h2>Shift</h2></div>
+      <p class="sect-sub">Bilang ng pera sa umpisa at katapusan. <span style="color:var(--faint)">Open &amp; close your shift.</span></p>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>a</b> Settings → Shift</span>
+          <h3>Buksan at isara ang shift</h3>
+          <p><strong>Buksan</strong> sa umpisa — ilagay ang panimulang pera sa kahon. <strong>Isara</strong> sa katapusan para makita ang buod at inaasahang cash.
+            <span class="en">Open with starting cash, close to see the summary &amp; expected cash.</span></p>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Shift summary</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+    </section>
+
+    <!-- 6. REPORTS -->
+    <section id="ulat" class="step-group">
+      <div class="sect-head"><span class="sect-num">6</span><h2>Ulat</h2></div>
+      <p class="sect-sub">Benta, kita, at best sellers. <span style="color:var(--faint)">Sales reports.</span></p>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>a</b> Ulat tab</span>
+          <h3>Tingnan ang benta mo</h3>
+          <p>Sa <strong>Ulat</strong> tab: <strong>Ngayon / Linggo / Taon</strong>, best sellers, gastos, at kita. Pindutin ang <strong>CSV</strong> button para i-export (pwedeng buksan sa Excel o Google Sheets).
+            <span class="en">Today/Week/Year, best sellers, expenses, profit + CSV export.</span></p>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Ulat + CSV</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+    </section>
+
+    <!-- 7. CLOUD -->
+    <section id="cloud" class="step-group">
+      <div class="sect-head"><span class="sect-num">7</span><h2>Cloud Sync</h2></div>
+      <p class="sect-sub">Backup sa cloud — Premium. <span style="color:var(--faint)">Cloud backup (Premium).</span></p>
+
+      <div class="step reveal">
+        <div class="copy">
+          <span class="pill"><b>a</b> Premium</span>
+          <h3>Awtomatikong backup</h3>
+          <p>Kapag Premium ka, awtomatikong naka-backup ang benta at items sa cloud kapag may internet. Tingnan ang status sa <strong>Settings</strong> — <strong style="color:var(--green)">berde</strong> = naka-backup lahat.
+            <span class="en">Auto cloud backup when online; green status = all backed up.</span></p>
+          <div class="tip green">📴 Walang internet? Okay lang — naka-save lahat sa device. Kusang mag-sa-sync pagbalik ng signal.</div>
+        </div>
+        <div class="shot"><span class="cam">📸</span><span class="lbl">Larawan: Sync status</span><span class="hint">palitan ng screenshot</span></div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features reveal">
+      <div class="sect-head"><span class="sect-num">★</span><h2>Lahat ng kaya ng TindaPOS</h2></div>
+      <div class="feat-list">
+        <div class="feat"><div class="ic">🛒</div><h4>Benta</h4><p>Cash at GCash</p></div>
+        <div class="feat"><div class="ic">🏷️</div><h4>Variants</h4><p>Sizes &amp; add-ons</p></div>
+        <div class="feat"><div class="ic">📦</div><h4>Stock</h4><p>Bilang ng stock</p></div>
+        <div class="feat"><div class="ic">📊</div><h4>Ulat</h4><p>Kita at best sellers</p></div>
+        <div class="feat"><div class="ic">🧾</div><h4>Resibo</h4><p>Print o digital</p></div>
+        <div class="feat"><div class="ic">☁️</div><h4>Cloud</h4><p>Backup (Premium)</p></div>
+        <div class="feat"><div class="ic">📤</div><h4>CSV</h4><p>Export sa Excel</p></div>
+        <div class="feat"><div class="ic">📴</div><h4>Offline</h4><p>Gana kahit walang net</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="cta" href="https://bubblez360.github.io/SimplePosSystem/">Buksan ang TindaPOS →</a>
+    <p class="small">TindaPOS · Gabay sa paggamit · Gawa para sa tindero't tindera 🇵🇭</p>
+  </footer>
+
+  <script>
+    // Scroll-reveal — content is visible by default; this only enhances.
+    (function () {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const els = document.querySelectorAll('.reveal');
+      if (reduce || !('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('in'); });
+        return;
+      }
+      const io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        });
+      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+
+    // Active section chip on scroll.
+    (function () {
+      const chips = Array.from(document.querySelectorAll('.chip'));
+      const map = {};
+      chips.forEach(function (c) { map[c.getAttribute('href').slice(1)] = c; });
+      const sections = chips.map(function (c) { return document.getElementById(c.getAttribute('href').slice(1)); }).filter(Boolean);
+      const spy = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            chips.forEach(function (c) { c.classList.remove('is-active'); });
+            if (map[e.target.id]) map[e.target.id].classList.add('is-active');
+          }
+        });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      sections.forEach(function (s) { spy.observe(s); });
+    })();
+  </script>
+</body>
+</html>
