@@ -16,7 +16,7 @@ import MenuScreen from './screens/MenuScreen'
 import UlatScreen from './screens/UlatScreen'
 import SettingScreen from './screens/SettingScreen'
 
-const GUIDE_URL = 'https://bubblez360.github.io/SimplePosSystem/'
+const GUIDE_URL = 'https://bubblez360.github.io/SimplePosSystem/guide.html'
 
 function OnboardingModal({ lang, onClose }) {
   function openGuide() {
