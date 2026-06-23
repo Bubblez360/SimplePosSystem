@@ -532,7 +532,7 @@ export default function SettingScreen() {
                       {t('disconnectPrinter', lang)}
                     </button>
                   ) : (
-                    <button onClick={async () => { try { await connectPrinter(); setPrinterConnected(true); showToast(lang === 'fil' ? 'Printer nakakonekta!' : 'Printer connected!') } catch (e) { showToast(e.message || (lang === 'fil' ? 'Hindi makakonekta' : 'Could not connect')) } }} className="h-8 px-3 rounded-btn text-xs font-bold border border-border bg-surface-2 text-muted cursor-pointer">
+                    <button onClick={async () => { try { await connectPrinter(); setPrinterConnected(true); showToast(lang === 'fil' ? 'Printer nakakonekta!' : 'Printer connected!') } catch (e) { if (e?.name === 'NotFoundError') return; showToast(lang === 'fil' ? 'Hindi makonekta sa printer. Siguraduhing naka-on, nakakonekta, at hindi ginagamit ng ibang app.' : "Couldn't connect. Make sure the printer is on, paired, and not in use by another app.") } }} className="h-8 px-3 rounded-btn text-xs font-bold border border-border bg-surface-2 text-muted cursor-pointer">
                       {lang === 'fil' ? 'Ikonekta' : 'Connect'}
                     </button>
                   )
