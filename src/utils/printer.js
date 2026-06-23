@@ -55,9 +55,10 @@ export async function disconnectPrinter() {
   } catch (_) { /* ignore */ }
 }
 
-export async function printReceipt({ businessName, ref, date, lines, total, method, cashGiven, change, discount, lang }) {
+// Receipts always print in English regardless of the app's UI language —
+// cleaner and more professional on paper.
+export async function printReceipt({ businessName, ref, date, lines, total, method, cashGiven, change, discount }) {
   if (!_writer) return
-  const isFil = lang === 'fil'
   const W = 32
 
   const parts = [
@@ -71,8 +72,8 @@ export async function printReceipt({ businessName, ref, date, lines, total, meth
     enc.encode('--------------------------------\n'),
     CMD.left,
     enc.encode(`Ref: ${ref}\n`),
-    enc.encode(`${new Date(date).toLocaleString(isFil ? 'fil-PH' : 'en-PH')}\n`),
-    enc.encode(`${isFil ? 'Paraan' : 'Method'}: ${method === 'gcash' ? 'GCash' : 'Cash'}\n`),
+    enc.encode(`${new Date(date).toLocaleString('en-PH')}\n`),
+    enc.encode(`Method: ${method === 'gcash' ? 'GCash' : 'Cash'}\n`),
     enc.encode('--------------------------------\n'),
   ]
 
@@ -85,21 +86,21 @@ export async function printReceipt({ businessName, ref, date, lines, total, meth
   parts.push(enc.encode('--------------------------------\n'))
 
   if (discount?.amount > 0) {
-    parts.push(enc.encode(padLine(isFil ? 'Diskwento' : 'Discount', `-P${discount.amount.toFixed(2)}`, W) + '\n'))
+    parts.push(enc.encode(padLine('Discount', `-P${discount.amount.toFixed(2)}`, W) + '\n'))
   }
 
   parts.push(CMD.boldOn)
-  parts.push(enc.encode(padLine(isFil ? 'KABUUAN' : 'TOTAL', `P${total.toFixed(2)}`, W) + '\n'))
+  parts.push(enc.encode(padLine('TOTAL', `P${total.toFixed(2)}`, W) + '\n'))
   parts.push(CMD.boldOff)
 
   if (method === 'cash' && cashGiven) {
-    parts.push(enc.encode(padLine(isFil ? 'Ibinigay' : 'Cash', `P${parseFloat(cashGiven).toFixed(2)}`, W) + '\n'))
-    parts.push(enc.encode(padLine(isFil ? 'Sukli' : 'Change', `P${parseFloat(change).toFixed(2)}`, W) + '\n'))
+    parts.push(enc.encode(padLine('Cash', `P${parseFloat(cashGiven).toFixed(2)}`, W) + '\n'))
+    parts.push(enc.encode(padLine('Change', `P${parseFloat(change).toFixed(2)}`, W) + '\n'))
   }
 
   parts.push(enc.encode('--------------------------------\n'))
   parts.push(CMD.center)
-  parts.push(enc.encode((isFil ? 'Salamat sa inyong pagbili!' : 'Thank you!') + '\n'))
+  parts.push(enc.encode('Thank you!\n'))
   parts.push(CMD.feed, CMD.feed, CMD.feed, CMD.cut)
 
   await _writer.write(concat(...parts))
