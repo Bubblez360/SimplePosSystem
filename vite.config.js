@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ command }) => ({
-  // Served from a GitHub Pages project subpath in production, root in dev.
-  base: command === 'build' ? '/SimplePosSystem/' : '/',
+  // Base path differs per host:
+  //  - GitHub Pages project site  -> /SimplePosSystem/ (subpath)
+  //  - Vercel (root domain) + dev  -> /
+  base: command === 'build' && !process.env.VERCEL ? '/SimplePosSystem/' : '/',
   server: {
     port: parseInt(process.env.PORT || '5173'),
     strictPort: false,
