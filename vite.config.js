@@ -2,7 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Served from a GitHub Pages project subpath in production, root in dev.
+  base: command === 'build' ? '/SimplePosSystem/' : '/',
   server: {
     port: parseInt(process.env.PORT || '5173'),
     strictPort: false,
@@ -19,10 +21,11 @@ export default defineConfig({
         background_color: '#FAFAF7',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: '.',
+        scope: '.',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
         ]
       },
       workbox: {
@@ -42,4 +45,4 @@ export default defineConfig({
       }
     })
   ]
-})
+}))
