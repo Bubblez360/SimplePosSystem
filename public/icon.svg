@@ -1,0 +1,8 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TindaPOS">
+  <rect width="512" height="512" fill="#F59E0B"/>
+  <rect x="116" y="178" width="280" height="58" rx="16" fill="#FFFFFF"/>
+  <rect x="146" y="236" width="220" height="166" rx="18" fill="#FFFFFF"/>
+  <rect x="170" y="262" width="48" height="42" rx="7" fill="#F59E0B"/>
+  <rect x="294" y="262" width="48" height="42" rx="7" fill="#F59E0B"/>
+  <rect x="216" y="318" width="80" height="84" rx="8" fill="#F59E0B"/>
+</svg>
