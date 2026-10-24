@@ -6,24 +6,29 @@ const FUTURE = new Date(Date.now() + 10 * 86400_000).toISOString()
 const PAST = new Date(Date.now() - 86400_000).toISOString()
 
 // Minimal chainable stand-in for the Supabase admin client.
-function fakeAdmin({ licenses = [], rateCount = 0 } = {}) {
+function fakeAdmin({ licenses = [], rateCount = 0, onRateDelete = () => {} } = {}) {
   return {
     from(table) {
       const filters = {}
+      let deleting = false
       const b = {
         select: () => b,
         eq: (k, v) => { filters[k] = v; return b },
+        in: (k, v) => { filters[k] = v; return b },
         gte: () => b,
         lt: () => b,
         order: () => b,
         limit: () => b,
-        delete: () => b,
+        delete: () => { deleting = true; return b },
         insert: async () => ({ error: null }),
         maybeSingle: async () => {
           const row = licenses.find(l => Object.entries(filters).every(([k, v]) => l[k] === v))
           return { data: row ?? null, error: null }
         },
-        then: res => Promise.resolve(table === 'rate_limits' ? { count: rateCount } : {}).then(res),
+        then: res => {
+          if (deleting && table === 'rate_limits') onRateDelete(filters)
+          return Promise.resolve(table === 'rate_limits' ? { count: rateCount } : {}).then(res)
+        },
       }
       return b
     },
@@ -76,6 +81,26 @@ describe('retrieve-license', () => {
   it('surfaces a delivery failure instead of pretending it was sent', async () => {
     const { call } = setup({ admin: fakeAdmin({ licenses: [license()] }), sendEmail: vi.fn(async () => false) })
     expect((await call({ email: 'nena@example.com' })).status).toBe(502)
+  })
+
+  it('does not charge the customer a rate-limit try when the email fails to send', async () => {
+    const onRateDelete = vi.fn()
+    const { call } = setup({
+      admin: fakeAdmin({ licenses: [license()], onRateDelete }),
+      sendEmail: vi.fn(async () => false),
+    })
+    expect((await call({ email: 'nena@example.com' })).status).toBe(502)
+    expect(onRateDelete).toHaveBeenCalledWith(expect.objectContaining({
+      identifier: ['email:nena@example.com', 'ip:203.0.113.9'],
+      action: 'retrieve',
+    }))
+  })
+
+  it('keeps the rate-limit try when the email was sent', async () => {
+    const onRateDelete = vi.fn()
+    const { call } = setup({ admin: fakeAdmin({ licenses: [license()], onRateDelete }) })
+    expect((await call({ email: 'nena@example.com' })).status).toBe(200)
+    expect(onRateDelete).not.toHaveBeenCalled()
   })
 
   it('rate limits repeated requests', async () => {
