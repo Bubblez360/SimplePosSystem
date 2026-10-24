@@ -122,7 +122,7 @@ export default function App() {
       {receiptOpen && <Suspense fallback={null}><ReceiptModal /></Suspense>}
       {shiftModalOpen && <ShiftModal />}
       {helpOpen && <HelpModal />}
-      <InstallPrompt />
+      <InstallPrompt ready={!showOnboarding} />
       {showOnboarding && <OnboardingModal lang={lang} onClose={handleCloseOnboarding} />}
     </div>
   )
