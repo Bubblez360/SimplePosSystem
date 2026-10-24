@@ -8,6 +8,12 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      screens: {
+        // Wide desktop/tablet, or a phone/tablet held sideways on a stand
+        // (812x375 left ~117px for items with the bottom nav + cart bar).
+        rail: { raw: '(min-width: 1024px), (orientation: landscape) and (max-height: 500px) and (min-width: 640px)' },
+        short: { raw: '(max-height: 500px)' },
+      },
       colors: {
         bg: token('bg'),
         surface: token('surface'),

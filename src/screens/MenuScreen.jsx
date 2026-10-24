@@ -71,7 +71,7 @@ export default function MenuScreen() {
             <p className="eyebrow">{items.length} {t('items', lang)}</p>
             <h1 className="text-[22px] font-extrabold tracking-tight leading-tight">{t('menu', lang)}</h1>
           </div>
-          <button type="button" onClick={() => setEditing('new')} className="btn-primary btn-sm hidden lg:inline-flex">
+          <button type="button" onClick={() => setEditing('new')} className="btn-primary btn-sm hidden rail:inline-flex">
             <Icon name="plus" size={18} strokeWidth={2.6} />
             {t('addItem', lang)}
           </button>
@@ -104,7 +104,7 @@ export default function MenuScreen() {
         )}
       </header>
 
-      <div className="p-3 pb-24 lg:pb-3">
+      <div className="p-3 pb-24 rail:pb-3">
         {visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
             <span className="w-16 h-16 rounded-2xl bg-surface-2 text-faint flex items-center justify-center">
@@ -166,7 +166,7 @@ export default function MenuScreen() {
       <button
         type="button"
         onClick={() => setEditing('new')}
-        className="btn-primary fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom)+1rem)] z-20 h-14 px-5 shadow-float lg:hidden"
+        className="btn-primary fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom)+1rem)] z-20 h-14 px-5 shadow-float rail:hidden"
       >
         <Icon name="plus" size={20} strokeWidth={2.6} />
         {t('addItem', lang)}

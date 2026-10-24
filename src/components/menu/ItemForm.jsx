@@ -260,7 +260,7 @@ export default function ItemForm({ item, categories, lang, saving, onSave, onCan
         </section>
 
         {/* Actions — sticky above the nav */}
-        <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 -mx-4 px-4 py-3 bg-bg/95 backdrop-blur border-t border-border flex flex-col gap-2">
+        <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] rail:bottom-0 -mx-4 px-4 py-3 bg-bg/95 backdrop-blur border-t border-border flex flex-col gap-2">
           <button type="submit" disabled={saving || !valid} className="btn-primary w-full h-14 text-base">
             {saving ? '…' : t('save', lang)}
           </button>

@@ -140,17 +140,26 @@ export function syncIdentity(rec) {
   return rec.uuid || (rec.ref ? `ref:${rec.ref}` : `id:${rec.id}`)
 }
 
+// Short counter number for calling out orders ("Order 12"). Restarts every
+// day; voided sales still count so a number is never handed out twice.
+async function nextOrderNo(db) {
+  const today = new Date().toDateString()
+  const todays = (await db.getAll('sales')).filter(s => new Date(s.date).toDateString() === today)
+  return Math.max(todays.length, ...todays.map(s => s.orderNo || 0)) + 1
+}
+
 export async function recordSale(sale) {
   const db = await getDB()
   const ref = generateRef()
   const date = new Date().toISOString()
   const uuid = newUUID()
-  const id = await db.add('sales', { ...sale, ref, date, uuid, synced: false })
+  const orderNo = await nextOrderNo(db)
+  const id = await db.add('sales', { ...sale, ref, date, uuid, orderNo, synced: false })
   // Decrement stock for items that track it
   if (sale.lines?.length) {
     await decrementStock(sale.lines)
   }
-  return { id, ref, date, uuid }
+  return { id, ref, date, uuid, orderNo }
 }
 
 export async function getTodaySales() {

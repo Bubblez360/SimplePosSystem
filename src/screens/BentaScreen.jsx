@@ -4,6 +4,7 @@ import { t } from '../i18n'
 import Icon from '../components/Icon'
 import ItemTile from '../components/ItemTile'
 import CartPanel from '../components/cart/CartPanel'
+import { HeldOrdersButton } from '../components/HeldOrders'
 
 const SEARCH_THRESHOLD = 6
 
@@ -33,21 +34,22 @@ export default function BentaScreen() {
   }
 
   return (
-    <div className="screen-enter lg:flex lg:h-full">
-      <div className="lg:flex-1 lg:min-w-0 lg:overflow-y-auto">
+    <div className="screen-enter rail:flex rail:h-full">
+      <div className="rail:flex-1 rail:min-w-0 rail:overflow-y-auto">
         <header className="sticky top-0 z-10 bg-bg/90 backdrop-blur border-b border-border">
-          <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+          <div className="px-4 pt-3 pb-2 short:py-1.5 flex items-center gap-3">
             {logo ? (
-              <img src={logo} alt="" className="w-11 h-11 rounded-xl object-cover border border-border shrink-0" />
+              <img src={logo} alt="" className="w-11 h-11 short:hidden rounded-xl object-cover border border-border shrink-0" />
             ) : (
-              <span className="w-11 h-11 rounded-xl bg-amber text-on-amber flex items-center justify-center shrink-0">
+              <span className="w-11 h-11 short:hidden rounded-xl bg-amber text-on-amber flex items-center justify-center shrink-0">
                 <Icon name="store" size={22} />
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="eyebrow truncate">{businessName || t('appName', lang)}</p>
-              <h1 className="text-[22px] font-extrabold tracking-tight leading-tight">{t('benta', lang)}</h1>
+              <p className="eyebrow truncate short:hidden">{businessName || t('appName', lang)}</p>
+              <h1 className="text-[22px] short:text-[17px] font-extrabold tracking-tight leading-tight">{t('benta', lang)}</h1>
             </div>
+            <HeldOrdersButton />
           </div>
 
           {items.length > SEARCH_THRESHOLD && (
@@ -75,7 +77,7 @@ export default function BentaScreen() {
           )}
 
           {categories.length > 0 && (
-            <div className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar" role="group" aria-label={t('categories', lang)}>
+            <div className="flex gap-2 px-4 pb-3 short:pb-1.5 overflow-x-auto no-scrollbar" role="group" aria-label={t('categories', lang)}>
               <button type="button" className="chip" aria-pressed={activeCat === 'all'} onClick={() => setActiveCat('all')}>
                 {t('allItems', lang)}
               </button>
@@ -99,7 +101,7 @@ export default function BentaScreen() {
           {visible.length === 0 ? (
             <EmptyCatalog hasItems={items.length > 0} lang={lang} />
           ) : (
-            <ul className="grid grid-cols-2 min-[560px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+            <ul className="grid grid-cols-2 min-[560px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 short:grid-cols-3 gap-3">
               {visible.map(item => (
                 <ItemTile
                   key={item.id}
