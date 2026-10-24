@@ -36,7 +36,7 @@ export default function ItemTile({ item, qty, lang, onAdd, onRemove }) {
         className="absolute inset-0 z-0 w-full h-full rounded-card cursor-pointer disabled:cursor-not-allowed"
       />
 
-      <div className="relative pointer-events-none aspect-[5/4] flex items-center justify-center bg-surface-2 text-[60px] leading-none">
+      <div className="relative pointer-events-none aspect-[5/4] short:aspect-[16/10] flex items-center justify-center bg-surface-2 text-[60px] short:text-[40px] leading-none">
         {item.photo
           ? <img src={item.photo} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
           : <span aria-hidden="true">{item.emoji || '🍱'}</span>}

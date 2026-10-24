@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
-import { buildSale, computeDiscount } from '../lib/checkout'
+import { buildSale, computeDiscount, cashSuggestions } from '../lib/checkout'
 import { finalizeSale } from '../lib/finalizeSale'
 import { t } from '../i18n'
 import Sheet from './Sheet'
 import Icon from './Icon'
 import AmountInput from './AmountInput'
 import { useCart, peso } from './cart/useCart'
-
-const DENOMINATIONS = [20, 50, 100, 200, 500, 1000]
 
 export default function CheckoutModal() {
   const items = useStore(s => s.items)
@@ -36,7 +34,7 @@ export default function CheckoutModal() {
   const shortBy = Math.max(0, payable - received)
   const change = method === 'cash' ? Math.max(0, received - payable) : 0
   const canConfirm = !busy && lines.length > 0 && (method === 'gcash' || shortBy === 0)
-  const quickCash = DENOMINATIONS.filter(v => v >= Math.floor(payable))
+  const quickCash = cashSuggestions(payable)
   const isFil = lang === 'fil'
 
   function toggleAddon(cartKey, idx) {
@@ -259,15 +257,16 @@ export default function CheckoutModal() {
             </div>
             {quickCash.length > 0 && (
               <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1" role="group" aria-label={t('amountReceived', lang)}>
-                {quickCash.map(v => (
+                {quickCash.map((v, i) => (
                   <button
                     key={v}
                     type="button"
                     className="chip font-mono !text-[14px]"
-                    aria-pressed={cashGiven === String(v)}
+                    aria-pressed={Number(cashGiven) === v}
                     onClick={() => setCashGiven(String(v))}
                   >
-                    ₱{v}
+                    {i === 0 && <span className="font-sans">{t('exactCash', lang)}</span>}
+                    {peso(v, { compact: true })}
                   </button>
                 ))}
               </div>

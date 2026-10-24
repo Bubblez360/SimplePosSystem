@@ -10,7 +10,7 @@ const latte = {
 
 beforeEach(() => {
   localStorage.clear()
-  useStore.setState({ items: [tea, latte], cart: {}, cartNotes: {}, cartAddons: {}, discount: { type: 'flat', value: '' }, toast: null })
+  useStore.setState({ items: [tea, latte], cart: {}, cartNotes: {}, cartAddons: {}, discount: { type: 'flat', value: '' }, toast: null, heldOrders: [] })
 })
 
 describe('addToCart stock cap', () => {
@@ -80,5 +80,68 @@ describe('totals', () => {
     const addons = { '2_1': [0] }
     expect(cartTotal([tea, latte], cart, addons)).toBe(200)
     expect(cartLines([tea, latte], cart, addons)[0].displayName).toBe('Latte (L)')
+  })
+})
+
+describe('held (parked) orders', () => {
+  const fill = () => useStore.setState({
+    cart: { '1': 2, '2_1': 1 }, cartNotes: { '1': 'less ice' }, cartAddons: { '2_1': [0] },
+    discount: { type: 'percent', value: '10' },
+  })
+
+  it('parks the current order and clears the counter', () => {
+    fill()
+    useStore.getState().holdOrder()
+    const s = useStore.getState()
+    expect(s.cart).toEqual({})
+    expect(s.discount).toEqual({ type: 'flat', value: '' })
+    expect(s.heldOrders).toHaveLength(1)
+    expect(s.heldOrders[0]).toMatchObject({ cart: { '1': 2, '2_1': 1 }, cartNotes: { '1': 'less ice' }, discount: { type: 'percent', value: '10' } })
+  })
+
+  it('ignores an empty cart', () => {
+    useStore.getState().holdOrder()
+    expect(useStore.getState().heldOrders).toHaveLength(0)
+  })
+
+  it('resumes a held order exactly as it was and removes it from the list', () => {
+    fill()
+    useStore.getState().holdOrder()
+    const [{ id }] = useStore.getState().heldOrders
+    useStore.getState().resumeOrder(id)
+    const s = useStore.getState()
+    expect(s.heldOrders).toHaveLength(0)
+    expect(s.cart).toEqual({ '1': 2, '2_1': 1 })
+    expect(s.cartAddons).toEqual({ '2_1': [0] })
+    expect(s.discount).toEqual({ type: 'percent', value: '10' })
+  })
+
+  it('swaps: resuming while the counter has an order parks that order first', () => {
+    fill()
+    useStore.getState().holdOrder()
+    useStore.setState({ cart: { '1': 1 } })
+    const [{ id }] = useStore.getState().heldOrders
+    useStore.getState().resumeOrder(id)
+    const s = useStore.getState()
+    expect(s.cart).toEqual({ '1': 2, '2_1': 1 })
+    expect(s.heldOrders).toHaveLength(1)
+    expect(s.heldOrders[0].cart).toEqual({ '1': 1 })
+  })
+
+  it('drops lines that can no longer be sold when resumed', () => {
+    fill()
+    useStore.getState().holdOrder()
+    useStore.setState({ items: [{ ...tea, stock: 1 }] }) // latte deleted, tea stock now 1
+    const [{ id }] = useStore.getState().heldOrders
+    useStore.getState().resumeOrder(id)
+    expect(useStore.getState().cart).toEqual({ '1': 1 })
+  })
+
+  it('can be discarded and survives a reload (persisted)', () => {
+    fill()
+    useStore.getState().holdOrder()
+    expect(JSON.parse(localStorage.getItem('tindapos-cart')).state.heldOrders).toHaveLength(1)
+    useStore.getState().discardHeld(useStore.getState().heldOrders[0].id)
+    expect(useStore.getState().heldOrders).toHaveLength(0)
   })
 })

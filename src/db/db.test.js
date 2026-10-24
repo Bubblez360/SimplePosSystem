@@ -174,3 +174,22 @@ describe('backup export/import', () => {
     expect(localStorage.getItem('businessName')).toBe('Ok Store')
   })
 })
+
+describe('order numbers', () => {
+  it('counts up through the day, starting at 1', async () => {
+    const a = await recordSale({ total: 1, method: 'cash', lines: [] })
+    const b = await recordSale({ total: 1, method: 'cash', lines: [] })
+    expect([a.orderNo, b.orderNo]).toEqual([1, 2])
+    expect((await (await getDB()).get('sales', b.id)).orderNo).toBe(2)
+  })
+
+  it('restarts every day and still counts voided sales (numbers are never reused)', async () => {
+    const db = await getDB()
+    const yesterday = new Date(Date.now() - 36 * 3600_000).toISOString()
+    await db.add('sales', { total: 1, method: 'cash', date: yesterday, orderNo: 57, ref: 'old', uuid: 'u-old', synced: true })
+    const first = await recordSale({ total: 1, method: 'cash', lines: [] })
+    expect(first.orderNo).toBe(1)
+    await voidSale(first.id)
+    expect((await recordSale({ total: 1, method: 'cash', lines: [] })).orderNo).toBe(2)
+  })
+})

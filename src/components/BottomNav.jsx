@@ -21,11 +21,11 @@ export default function BottomNav() {
     <nav
       aria-label={lang === 'fil' ? 'Pangunahing menu' : 'Main navigation'}
       className="fixed z-30 inset-x-0 bottom-0 bg-surface/95 backdrop-blur border-t border-border safe-bottom
-        lg:inset-y-0 lg:right-auto lg:w-[88px] lg:border-t-0 lg:border-r lg:pt-[env(safe-area-inset-top)]"
+        rail:inset-y-0 rail:right-auto rail:w-[88px] rail:border-t-0 rail:border-r rail:pt-[env(safe-area-inset-top)]"
     >
-      <div className="grid grid-cols-4 h-16 max-w-2xl mx-auto lg:max-w-none lg:h-auto lg:grid-cols-1 lg:gap-1 lg:px-2 lg:pt-5">
+      <div className="grid grid-cols-4 h-16 max-w-2xl mx-auto rail:max-w-none rail:h-auto rail:grid-cols-1 rail:gap-1 rail:px-2 rail:pt-5">
         {logo && (
-          <img src={logo} alt="" className="hidden lg:block w-11 h-11 mx-auto mb-3 rounded-xl object-cover border border-border" />
+          <img src={logo} alt="" className="hidden rail:block w-11 h-11 mx-auto mb-3 rounded-xl object-cover border border-border" />
         )}
         {TABS.map(({ key, icon }) => {
           const active = screen === key
@@ -36,7 +36,7 @@ export default function BottomNav() {
               onClick={() => setScreen(key)}
               aria-current={active ? 'page' : undefined}
               className="group relative flex flex-col items-center justify-center gap-0.5 min-h-[48px] cursor-pointer
-                lg:h-[68px] lg:rounded-2xl lg:hover:bg-surface-2 transition-colors"
+                rail:h-[68px] short:h-[54px] rail:rounded-2xl rail:hover:bg-surface-2 transition-colors"
             >
               <span
                 className={`flex items-center justify-center h-8 w-14 rounded-pill transition-colors duration-150 ${

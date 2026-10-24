@@ -23,7 +23,7 @@ export default function ReceiptModal() {
   const [busy, setBusy] = useState(false)
   if (!lastSale) return null
 
-  const { id, ref, date, lines, total, method, cashGiven, change, discount } = lastSale
+  const { id, ref, orderNo, date, lines, total, method, cashGiven, change, discount } = lastSale
   const isFil = lang === 'fil'
   const close = () => setReceiptOpen(false)
 
@@ -63,6 +63,12 @@ export default function ReceiptModal() {
                 {date ? new Date(date).toLocaleString(isFil ? 'fil-PH' : 'en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
               </p>
               {ref && <p className="font-mono text-[12px] font-bold tracking-widest text-faint mt-0.5">#{ref}</p>}
+              {orderNo && (
+                <p className="mt-3 inline-flex flex-col items-center rounded-2xl bg-amber-light px-6 py-2">
+                  <span className="text-[13px] font-bold text-amber-ink">{t('orderNumber', lang)}</span>
+                  <span className="font-mono text-[44px] font-medium leading-none text-text">{orderNo}</span>
+                </p>
+              )}
             </header>
 
             <ul className="px-5 py-1 divide-y divide-dashed divide-border">

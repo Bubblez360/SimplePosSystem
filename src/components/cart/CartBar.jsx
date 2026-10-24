@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore'
 import { t } from '../../i18n'
 import Icon from '../Icon'
 import CartLines from './CartLines'
+import { HoldButton } from '../HeldOrders'
 import { useCart, peso } from './useCart'
 
 // Phone/tablet cart: a floating pill above the nav that always shows the
@@ -20,7 +21,7 @@ export default function CartBar() {
   if (!hasItems) return null
 
   return (
-    <div className="fixed above-nav inset-x-0 z-20 px-3 lg:hidden">
+    <div className="fixed above-nav inset-x-0 z-20 px-3 rail:hidden">
       <div className="max-w-2xl mx-auto">
         {expanded && (
           <section
@@ -30,10 +31,13 @@ export default function CartBar() {
           >
             <div className="flex items-center justify-between pl-4 pr-1 border-b border-border shrink-0">
               <p className="eyebrow">{count} {t('items', lang)}</p>
-              <button type="button" onClick={clearCart} className="btn-ghost btn-sm text-error hover:bg-error-light">
-                <Icon name="trash" size={16} />
-                {t('clearAll', lang)}
-              </button>
+              <div className="flex items-center gap-1">
+                <HoldButton className="!border-0 !shadow-none" />
+                <button type="button" onClick={clearCart} className="btn-ghost btn-sm text-error hover:bg-error-light">
+                  <Icon name="trash" size={16} />
+                  {t('clearAll', lang)}
+                </button>
+              </div>
             </div>
             <div className="overflow-y-auto overscroll-contain">
               <CartLines lines={lines} />

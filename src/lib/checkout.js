@@ -45,3 +45,17 @@ export function sanitizeAmount(raw, maxDecimals = 2) {
   if (rest.length === 0) return whole
   return `${whole}.${rest.join('').slice(0, maxDecimals)}`
 }
+
+const BILLS = [20, 50, 100, 200, 500, 1000]
+
+// Quick-cash chips: the exact amount first (most street-food sales are paid
+// with the right money), then bills above it. Past P1000 there is no bill
+// above, so offer the next P500 / P1000 round-ups instead.
+export function cashSuggestions(payable) {
+  const exact = roundMoney(payable)
+  if (!(exact > 0)) return []
+  const above = BILLS.filter(v => v > exact)
+  if (above.length > 0) return [exact, ...above]
+  const roundUp = step => Math.floor(exact / step) * step + step
+  return [...new Set([exact, roundUp(500), roundUp(1000)])]
+}

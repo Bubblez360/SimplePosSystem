@@ -2,6 +2,7 @@ import { useStore } from '../../store/useStore'
 import { t } from '../../i18n'
 import Icon from '../Icon'
 import CartLines from './CartLines'
+import { HoldButton } from '../HeldOrders'
 import { useCart, peso } from './useCart'
 
 // Desktop / landscape-tablet cart: always-visible column beside the catalog.
@@ -15,18 +16,20 @@ export default function CartPanel() {
   return (
     <aside
       aria-label={t('currentOrder', lang)}
-      className="hidden lg:flex flex-col w-[380px] shrink-0 h-full border-l border-border bg-surface"
+      className="hidden rail:flex flex-col w-[300px] lg:w-[380px] shrink-0 h-full border-l border-border bg-surface"
     >
-      <header className="flex items-center justify-between px-5 h-[72px] border-b border-border shrink-0">
-        <div>
+      <header className="flex items-center justify-between gap-2 px-4 h-[72px] border-b border-border shrink-0">
+        <div className="min-w-0">
           <h2 className="text-[17px] font-extrabold tracking-tight leading-tight">{t('currentOrder', lang)}</h2>
           <p className="text-[12px] font-semibold text-muted">{count} {t('items', lang)}</p>
         </div>
         {hasItems && (
-          <button type="button" onClick={clearCart} className="btn-ghost btn-sm text-error hover:bg-error-light">
-            <Icon name="trash" size={16} />
-            {t('clearAll', lang)}
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <HoldButton />
+            <button type="button" onClick={clearCart} className="icon-btn text-error" aria-label={t('clearAll', lang)}>
+              <Icon name="trash" size={18} />
+            </button>
+          </div>
         )}
       </header>
 
