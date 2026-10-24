@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { roundMoney, computeDiscount, buildSale, sanitizeAmount } from './checkout'
+import { roundMoney, computeDiscount, buildSale, sanitizeAmount, cashSuggestions } from './checkout'
 
 const line = (over = {}) => ({
   id: 1, displayName: 'Milk Tea (Large)', qty: 2, subtotal: 180,
@@ -73,5 +73,22 @@ describe('sanitizeAmount', () => {
   it('limits decimal places', () => {
     expect(sanitizeAmount('9.999')).toBe('9.99')
     expect(sanitizeAmount('.5')).toBe('.5')
+  })
+})
+
+describe('cashSuggestions', () => {
+  it('leads with the exact amount, then bills above it', () => {
+    expect(cashSuggestions(130)).toEqual([130, 200, 500, 1000])
+    expect(cashSuggestions(100)).toEqual([100, 200, 500, 1000])
+    expect(cashSuggestions(69.45)).toEqual([69.45, 100, 200, 500, 1000])
+  })
+
+  it('still offers useful round-ups for big orders', () => {
+    expect(cashSuggestions(1200)).toEqual([1200, 1500, 2000])
+    expect(cashSuggestions(1000)).toEqual([1000, 1500, 2000])
+  })
+
+  it('offers nothing for a free order', () => {
+    expect(cashSuggestions(0)).toEqual([])
   })
 })

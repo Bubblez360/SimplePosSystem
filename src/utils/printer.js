@@ -57,7 +57,7 @@ export async function disconnectPrinter() {
 
 // Receipts always print in English regardless of the app's UI language —
 // cleaner and more professional on paper.
-export async function printReceipt({ businessName, ref, date, lines, total, method, cashGiven, change, discount }) {
+export async function printReceipt({ businessName, ref, orderNo, date, lines, total, method, cashGiven, change, discount }) {
   if (!_writer) return
   const W = 32
 
@@ -67,6 +67,7 @@ export async function printReceipt({ businessName, ref, date, lines, total, meth
     CMD.boldOn,
     CMD.doubleSize,
     enc.encode((businessName || 'TindaPOS') + '\n'),
+    enc.encode(orderNo ? `ORDER #${orderNo}\n` : ''),
     CMD.normalSize,
     CMD.boldOff,
     enc.encode('--------------------------------\n'),
