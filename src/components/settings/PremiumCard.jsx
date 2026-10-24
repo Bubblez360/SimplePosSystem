@@ -11,7 +11,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const FEATURES = [
   ['cloud', 'Cloud backup'],
   ['phone', 'Multi-device sync'],
-  ['chart', 'Full sales history'],
+  ['chart', 'Year-to-date reports'],
   ['download', 'CSV export'],
 ]
 
