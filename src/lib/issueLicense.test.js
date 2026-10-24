@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest'
-import { issueLicense } from '../../scripts/issue-license.mjs'
+import { issueLicense, restDeps } from '../../scripts/issue-license.mjs'
 
 const NOW = new Date('2026-10-24T00:00:00Z')
 
@@ -72,5 +72,30 @@ describe('issueLicense', () => {
     await expect(issueLicense({ email: 'nope', plan: 'monthly' }, fakeDeps())).rejects.toThrow(/valid email/)
     await expect(issueLicense({ email: 'a@b.co', plan: 'gold' }, fakeDeps())).rejects.toThrow(/Unknown plan/)
     await expect(issueLicense({ email: 'a@b.co', plan: 'monthly', days: -1 }, fakeDeps())).rejects.toThrow(/positive/)
+  })
+})
+
+describe('restDeps (Supabase REST)', () => {
+  const shared = { paymongo: { generateLicenseKey: () => 'K' }, email: { sendLicenseEmail: async () => true } }
+  const mk = fetchFn => restDeps('https://x.supabase.co', 'service-key', shared, fetchFn)
+
+  it('insert and extend succeed on the EMPTY 201/204 bodies Supabase returns for return=minimal', async () => {
+    const fetchFn = vi.fn(async (url, init) => new Response(null, { status: init.method === 'POST' ? 201 : 204 }))
+    const deps = mk(fetchFn)
+    await expect(deps.insert({ license_key: 'A' })).resolves.toBeNull()
+    await expect(deps.extend('A', new Date('2026-12-01T00:00:00Z'), 'monthly')).resolves.toBeNull()
+    expect(fetchFn.mock.calls[0][1].headers.Prefer).toBe('return=minimal')
+    expect(fetchFn.mock.calls[0][1].headers.Authorization).toBe('Bearer service-key')
+  })
+
+  it('findActive parses the JSON row list and returns null when there is none', async () => {
+    const row = { license_key: 'A', expires_at: '2026-12-01T00:00:00Z', plan: 'monthly' }
+    expect(await mk(async () => Response.json([row])).findActive('a@b.co')).toEqual(row)
+    expect(await mk(async () => Response.json([])).findActive('a@b.co')).toBeNull()
+  })
+
+  it('surfaces a Supabase error instead of pretending it worked', async () => {
+    const deps = mk(async () => new Response('{"message":"duplicate key"}', { status: 409 }))
+    await expect(deps.insert({})).rejects.toThrow(/Supabase 409/)
   })
 })
