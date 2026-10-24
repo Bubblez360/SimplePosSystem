@@ -1,14 +1,13 @@
 // Emails a license key to the address on file. Deploy with:
 //   supabase functions deploy retrieve-license
 // (JWT verification stays ON: the app calls it with its anon key.)
-// Needs the same RESEND_API_KEY / FROM_EMAIL secrets as paymongo-webhook.
+// Needs the same email secrets as paymongo-webhook (see _shared/mailer.ts).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "jsr:@supabase/supabase-js@2"
-import { sendLicenseEmail } from '../_shared/email.ts'
+import { mailerFromEnv } from '../_shared/mailer.ts'
 import { createRetrieveHandler } from './handler.ts'
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-const FROM_EMAIL = Deno.env.get('FROM_EMAIL') ?? 'TindaPOS <noreply@resend.dev>'
+const mailer = mailerFromEnv()
 
 const admin = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -17,7 +16,7 @@ const admin = createClient(
 
 Deno.serve(createRetrieveHandler({
   admin,
-  emailConfigured: !!RESEND_API_KEY,
+  emailConfigured: mailer.configured,
   sendEmail: ({ to, licenseKey, plan, expiresAt }) =>
-    sendLicenseEmail({ apiKey: RESEND_API_KEY, from: FROM_EMAIL, to, licenseKey, plan, expiresAt, reason: 'retrieve' }),
+    mailer.sendLicense({ to, licenseKey, plan, expiresAt, reason: 'retrieve' }),
 }))
