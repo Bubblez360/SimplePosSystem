@@ -13,6 +13,7 @@ export async function finalizeSale(saleData, { cashGiven = '', change = 0 } = {}
   const receipt = {
     id: sale.id,
     ref: sale.ref,
+    orderNo: sale.orderNo,
     date: sale.date,
     lines: saleData.lines,
     total: saleData.total,

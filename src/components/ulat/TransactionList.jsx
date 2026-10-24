@@ -30,7 +30,7 @@ export default function TransactionList({ sales, period, lang, onVoid }) {
               <span className="flex-1 min-w-0">
                 <span className="block text-[14px] font-bold">
                   {voided ? t('voided', lang) : gcash ? 'GCash' : t('cash', lang)}
-                  <span className="font-mono text-[12px] font-medium text-faint ml-2">{sale.ref || '—'}</span>
+                  <span className="font-mono text-[12px] font-medium text-faint ml-2">{sale.orderNo ? `#${sale.orderNo} · ` : ''}{sale.ref || '—'}</span>
                 </span>
                 <span className="block text-[12px] text-muted">
                   {new Date(sale.date).toLocaleString(locale, {

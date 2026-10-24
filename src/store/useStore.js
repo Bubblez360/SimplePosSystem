@@ -61,6 +61,37 @@ export const useStore = create(persist((set, get) => ({
   payMethod: 'cash',
   setPayMethod: (payMethod) => set({ payMethod }),
 
+  // Held (parked) orders: set a customer aside (they're hunting for change)
+  // and serve the next one. Persisted with the cart.
+  heldOrders: [],
+  holdOrder: () => {
+    const { cart, cartNotes, cartAddons, discount, heldOrders } = get()
+    if (Object.keys(cart).length === 0) return false
+    set({
+      heldOrders: [...heldOrders, snapshotOrder({ cart, cartNotes, cartAddons, discount })],
+      cart: {}, cartNotes: {}, cartAddons: {}, discount: EMPTY_DISCOUNT, payMethod: 'cash',
+    })
+    return true
+  },
+  // If the counter already has an order it is parked first (a swap), so
+  // nothing is ever lost by resuming.
+  resumeOrder: (id) => {
+    const state = get()
+    const target = state.heldOrders.find(h => h.id === id)
+    if (!target) return false
+    const rest = state.heldOrders.filter(h => h.id !== id)
+    const parked = Object.keys(state.cart).length > 0
+      ? [snapshotOrder({ cart: state.cart, cartNotes: state.cartNotes, cartAddons: state.cartAddons, discount: state.discount })]
+      : []
+    set({
+      heldOrders: [...rest, ...parked],
+      ...pruneCart(state.items, target), // drop anything deleted / out of stock meanwhile
+      discount: target.discount, payMethod: 'cash',
+    })
+    return true
+  },
+  discardHeld: (id) => set(s => ({ heldOrders: s.heldOrders.filter(h => h.id !== id) })),
+
   // Order-level discount, shared by the cash and GCash payment screens.
   discount: EMPTY_DISCOUNT,
   setDiscount: (discount) => set({ discount }),
@@ -150,8 +181,16 @@ export const useStore = create(persist((set, get) => ({
   // or a service-worker update reload.
   name: 'tindapos-cart',
   version: 1,
-  partialize: ({ cart, cartNotes, cartAddons }) => ({ cart, cartNotes, cartAddons }),
+  partialize: ({ cart, cartNotes, cartAddons, heldOrders }) => ({ cart, cartNotes, cartAddons, heldOrders }),
 }))
+
+function snapshotOrder({ cart, cartNotes, cartAddons, discount }) {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    createdAt: new Date().toISOString(),
+    cart, cartNotes, cartAddons, discount,
+  }
+}
 
 // Remove cart lines that can no longer be sold: deleted items, variants that
 // were removed, stale add-on indices, and quantities beyond tracked stock.

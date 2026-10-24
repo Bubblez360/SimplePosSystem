@@ -89,11 +89,11 @@ export default function App() {
       <main
         id="main"
         key={screen}
-        className={`h-full overflow-y-auto overscroll-contain lg:pl-[88px] ${
-          screen === 'benta' ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom))] lg:pb-0 lg:overflow-hidden' : 'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0'
+        className={`h-full overflow-y-auto overscroll-contain rail:pl-[88px] ${
+          screen === 'benta' ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom))] rail:pb-0 rail:overflow-hidden' : 'pb-[calc(5rem+env(safe-area-inset-bottom))] rail:pb-0'
         }`}
       >
-        <div className={screen === 'benta' ? 'lg:h-full' : 'w-full max-w-2xl lg:max-w-3xl mx-auto'}>
+        <div className={screen === 'benta' ? 'rail:h-full' : 'w-full max-w-2xl lg:max-w-3xl mx-auto'}>
           <Screen />
         </div>
       </main>
