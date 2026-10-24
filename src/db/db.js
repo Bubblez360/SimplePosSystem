@@ -103,9 +103,17 @@ export async function saveCategory(category) {
   return db.add('categories', rest)
 }
 
+// Deleting a category must not leave items pointing at a category that no
+// longer exists, so unlink them in the same transaction.
 export async function deleteCategory(id) {
   const db = await getDB()
-  return db.delete('categories', id)
+  const tx = db.transaction(['categories', 'items'], 'readwrite')
+  await tx.objectStore('categories').delete(id)
+  const itemStore = tx.objectStore('items')
+  for (const item of await itemStore.getAll()) {
+    if (item.categoryId === id) await itemStore.put({ ...item, categoryId: null })
+  }
+  await tx.done
 }
 
 // Sales
@@ -254,10 +262,12 @@ export async function openShift(openingFloat) {
   return shift
 }
 
-export async function closeShift(sales) {
+export async function closeShift(allSales) {
   const db = await getDB()
   const current = await db.get('settings', 'currentShift')
   if (!current) return null
+  // Cancelled sales never reached the till, so they must not inflate totals.
+  const sales = allSales.filter(s => s.status !== 'voided')
   const cashSales = sales.filter(s => s.method === 'cash').reduce((sum, s) => sum + s.total, 0)
   const gcashSales = sales.filter(s => s.method === 'gcash').reduce((sum, s) => sum + s.total, 0)
   const record = {
@@ -268,6 +278,7 @@ export async function closeShift(sales) {
     totalSales: cashSales + gcashSales,
     expectedCash: (current.openingFloat || 0) + cashSales,
     transactionCount: sales.length,
+    voidedCount: allSales.length - sales.length,
   }
   await db.add('shifts', record)
   await db.delete('settings', 'currentShift')
@@ -369,6 +380,13 @@ export async function markSyncedByIdentity(identityMap) {
 }
 
 // Backup & Restore
+const IDB_SETTING_KEYS = ['gcashQR', 'logo']
+const LOCAL_SETTING_VALIDATORS = {
+  businessName: v => v.length <= 80,
+  lang: v => v === 'fil' || v === 'eng',
+  theme: v => v === 'light' || v === 'dark',
+}
+
 export async function exportAllData() {
   const db = await getDB()
   const [items, categories, sales, expenses, shifts] = await Promise.all([
@@ -378,11 +396,15 @@ export async function exportAllData() {
     db.getAll('expenses'),
     db.getAll('shifts'),
   ])
-  const settingKeys = ['gcashQR', 'logo', 'businessName', 'lang', 'theme']
   const settings = {}
-  for (const key of settingKeys) {
+  for (const key of IDB_SETTING_KEYS) {
     const val = await db.get('settings', key)
-    if (val !== undefined) settings[key] = val
+    if (val) settings[key] = val
+  }
+  // Name, language and theme live in localStorage, not IndexedDB.
+  for (const key of Object.keys(LOCAL_SETTING_VALIDATORS)) {
+    const val = localStorage.getItem(key)
+    if (val) settings[key] = val
   }
   return {
     version: 1,
@@ -417,9 +439,21 @@ export async function importAllData(data) {
   for (const shift of (data.shifts || [])) await tx.objectStore('shifts').add(shift)
   await tx.done
 
-  if (data.settings) {
-    for (const [key, val] of Object.entries(data.settings)) {
+  await restoreSettings(db, data.settings)
+}
+
+// Only whitelisted settings are restored — a crafted backup must not be able to
+// overwrite internal keys such as currentShift or defaultDataSeeded.
+async function restoreSettings(db, settings) {
+  if (!settings || typeof settings !== 'object') return
+  for (const key of IDB_SETTING_KEYS) {
+    const val = settings[key]
+    if (typeof val === 'string' && val.startsWith('data:image/')) {
       await db.put('settings', val, key)
     }
+  }
+  for (const [key, isValid] of Object.entries(LOCAL_SETTING_VALIDATORS)) {
+    const val = settings[key]
+    if (typeof val === 'string' && isValid(val)) localStorage.setItem(key, val)
   }
 }

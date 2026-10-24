@@ -2,45 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-}
-
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   Channel triplets ("r g b") so Tailwind can apply opacity. See DESIGN.md.
+   Amber is the brand. Text ON amber is near-black (--on-amber): white on
+   #F59E0B is only 2.1:1, near-black is 8.6:1 and reads in direct sunlight.
+   Amber used AS TEXT on light surfaces is --amber-ink (#B45309, 5:1).      */
 :root {
-  --amber:       #F59E0B;
-  --amber-dark:  #D97706;
-  --amber-light: #FEF3C7;
-  --amber-bg:    #FFFBEB;
-  --green:       #16A34A;
-  --green-light: #DCFCE7;
-  --bg:          #FAFAF7;
-  --surface:     #FFFFFF;
-  --surface-2:   #F5F5F0;
-  --border:      #E7E5E4;
-  --text:        #1C1917;
-  --text-muted:  #78716C;
-  --text-faint:  #A8A29E;
-  --error:       #EF4444;
-  --error-light: #FEF2F2;
+  --bg:          250 248 242;
+  --surface:     255 255 255;
+  --surface-2:   244 241 234;
+  --border:      232 226 214;
+  --border-strong: 140 132 121;  /* form-control edges: >=3:1 on surface (WCAG 1.4.11) */
+  --text:        28 25 23;
+  --muted:       107 100 92;
+  --faint:       112 104 94;
+
+  --amber:       245 158 11;
+  --amber-ink:   180 83 9;
+  --amber-light: 254 243 199;
+  --amber-bg:    255 250 235;
+  --on-amber:    28 25 23;
+
+  --green:       21 128 61;
+  --green-light: 220 252 231;
+  --on-green:    255 255 255;
+
+  --error:       200 30 30;
+  --error-light: 254 242 242;
+  --on-error:    255 255 255;
+
+  --shadow-card:  0 1px 2px rgb(28 25 23 / 0.06), 0 1px 1px rgb(28 25 23 / 0.04);
+  --shadow-float: 0 10px 28px -10px rgb(28 25 23 / 0.28), 0 2px 6px rgb(28 25 23 / 0.08);
+  --shadow-sheet: 0 -16px 48px -12px rgb(28 25 23 / 0.35);
+
+  color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --amber:       #FBBF24;
-  --amber-dark:  #F59E0B;
-  --amber-light: #2D2507;
-  --amber-bg:    #261F06;
-  --green:       #22C55E;
-  --green-light: #052E12;
-  --bg:          #1C1917;
-  --surface:     #292524;
-  --surface-2:   #3D3835;
-  --border:      #3D3835;
-  --text:        #FAFAF7;
-  --text-muted:  #A8A29E;
-  --text-faint:  #78716C;
-  --error:       #F87171;
-  --error-light: #3B1D1D;
+  --bg:          24 21 19;
+  --surface:     35 31 28;
+  --surface-2:   46 41 38;
+  --border:      66 59 53;
+  --border-strong: 125 116 107;
+  --text:        247 244 238;
+  --muted:       176 167 156;
+  --faint:       158 149 138;
+
+  --amber:       251 191 36;
+  --amber-ink:   251 191 36;
+  --amber-light: 56 42 10;
+  --amber-bg:    40 32 8;
+  --on-amber:    28 25 23;
+
+  --green:       34 197 94;
+  --green-light: 8 51 28;
+  --on-green:    5 46 18;
+
+  --error:       248 113 113;
+  --error-light: 62 30 30;
+  --on-error:    28 25 23;
+
+  --shadow-card:  0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-float: 0 12px 30px -10px rgb(0 0 0 / 0.7), 0 2px 6px rgb(0 0 0 / 0.4);
+  --shadow-sheet: 0 -16px 48px -12px rgb(0 0 0 / 0.7);
+
+  color-scheme: dark;
 }
 
 * {
@@ -53,72 +79,177 @@ html, body, #root {
   overscroll-behavior: none;
 }
 
+h1, h2, h3 { text-wrap: balance; }
+
 html {
-  /* Remove double-tap zoom + tap delay on mobile */
+  /* Remove double-tap zoom + tap delay on mobile (pinch-zoom stays enabled). */
   touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   /* iPhone notch / Android punch-hole */
   padding-top: env(safe-area-inset-top, 0px);
-  /* Prevent long-press text selection on UI (Android) */
+  /* Prevent long-press text selection on UI chrome (Android) */
   -webkit-user-select: none;
   user-select: none;
 }
 
-input, textarea {
+input, textarea, select {
   -webkit-user-select: text;
   user-select: text;
 }
 
 img {
-  /* Prevent long-press "save image" popup on item photos (iOS) */
+  /* No long-press "save image" popup on item photos (iOS) */
   -webkit-touch-callout: none;
   -webkit-user-drag: none;
 }
 
+/* Money is always DM Mono with tabular figures so columns line up. */
 .font-mono {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-variant-numeric: tabular-nums;
 }
 
+/* Keyboard focus must always be visible; pointer users never see it. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 3px solid rgb(var(--amber));
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
 @layer utilities {
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  /* Sits above the bottom nav, respecting iPhone home indicator */
-  .above-nav {
-    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
-  }
-  /* Bottom padding for sheet CTAs clear of home indicator */
-  .sheet-pb {
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
-  }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .sheet-pb { padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+  /* Floating cart bar sits just above the 64px bottom nav (home-indicator aware). */
+  .above-nav { bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.5rem); }
 }
 
-/* Item card press feedback */
-.item-card:active {
-  transform: scale(0.97);
+/* ── Component layer ───────────────────────────────────────────────────────
+   Small, named building blocks so screens read as intent, not class soup.   */
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-card shadow-card;
+  }
+
+  /* Quiet caption above a value/title. Sentence case on purpose: tiny tracked
+     all-caps labels on every block read as template scaffolding. */
+  .eyebrow {
+    @apply text-[13px] font-semibold text-muted;
+  }
+
+  /* Heading for a card / section. */
+  .section-title {
+    @apply flex items-center gap-2 text-[15px] font-bold text-text;
+  }
+
+  /* Buttons — 48px minimum touch target (DESIGN.md), thumb friendly. */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-btn
+      text-[15px] font-bold leading-none select-none cursor-pointer
+      transition-[transform,background-color,box-shadow,opacity] duration-150 ease-out
+      active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply btn bg-amber text-on-amber shadow-[0_6px_18px_-6px_rgb(var(--amber)/0.7)]
+      hover:brightness-95 disabled:bg-surface-2 disabled:text-faint disabled:shadow-none;
+  }
+  .btn-secondary {
+    @apply btn bg-surface text-text border border-border shadow-card hover:bg-surface-2
+      disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-surface-2 disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply btn bg-error-light text-error hover:brightness-95 disabled:opacity-50;
+  }
+  .btn-success {
+    @apply btn bg-green text-on-green hover:brightness-95 disabled:opacity-50;
+  }
+  .btn-sm {
+    @apply min-h-[44px] px-4 text-[13px];
+  }
+
+  /* Round icon-only button (close, stepper, etc.) — 44px hit area. */
+  .icon-btn {
+    @apply inline-flex items-center justify-center w-11 h-11 rounded-full text-muted
+      transition-colors duration-150 hover:bg-surface-2 active:bg-border cursor-pointer
+      disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 shrink-0 min-h-[44px] px-4 rounded-pill
+      border border-border bg-surface text-[13px] font-bold text-muted whitespace-nowrap
+      transition-colors duration-150 cursor-pointer hover:bg-surface-2;
+  }
+  .chip[aria-pressed="true"], .chip-active {
+    @apply bg-amber text-on-amber border-amber hover:bg-amber;
+  }
+
+  .field {
+    @apply w-full min-h-[48px] rounded-xl border border-border-strong bg-surface px-3.5
+      text-base font-semibold text-text placeholder:text-faint placeholder:font-medium
+      transition-colors duration-150 focus:outline-none focus:border-amber
+      focus:ring-2 focus:ring-amber/30;
+  }
+  .field-label {
+    @apply block mb-1.5 text-[13px] font-bold text-muted;
+  }
+
+  .pill-badge {
+    @apply inline-flex items-center rounded-pill px-2.5 py-0.5 text-[12px] font-bold;
+  }
+
+  .scrim { @apply fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px] animate-scrim-in; }
 }
 
-/* Bayad na pulse when total > 0 */
+/* Charge button pulse when the cart has a total (DESIGN.md motion rules). */
 @keyframes pulse-amber {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-  50%       { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--amber) / 0.45); }
+  50%      { box-shadow: 0 0 0 9px rgb(var(--amber) / 0); }
 }
-.pulse-cta {
-  animation: pulse-amber 2s ease-in-out infinite;
+.pulse-cta { animation: pulse-amber 2.2s ease-in-out infinite; }
+
+/* Screen transitions: 250ms, transform/opacity only. */
+.screen-enter { animation: screen-in 250ms cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Smooth screen transitions */
-.screen-enter {
-  animation: fadeIn 150ms ease-out;
+/* Tile press feedback */
+.tile:active { transform: scale(0.97); }
+.tile { transition: transform 150ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pulse-cta { animation: none; }
 }
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+
+/* Torn-paper bottom edge for the on-screen receipt. */
+.receipt-paper { position: relative; margin-bottom: 14px; }
+.receipt-paper::after {
+  content: '';
+  position: absolute;
+  left: -1px; right: -1px; bottom: -13px; height: 14px;
+  background:
+    linear-gradient(-135deg, rgb(var(--surface)) 7px, transparent 0) 0 0 / 14px 14px repeat-x,
+    linear-gradient(135deg, rgb(var(--surface)) 7px, transparent 0) 0 0 / 14px 14px repeat-x;
+  filter: drop-shadow(0 1px 0 rgb(var(--border)));
 }

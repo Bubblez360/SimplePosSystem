@@ -1,13 +1,28 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { t } from '../i18n'
 
-export const useStore = create((set, get) => ({
+const EMPTY_DISCOUNT = { type: 'flat', value: '' }
+const TOAST_MS = 2400
+let toastTimer = null
+
+export const useStore = create(persist((set, get) => ({
   // Navigation
   screen: 'benta',
   setScreen: (screen) => set({ screen }),
 
-  // Item catalog
+  // Item catalog. Whenever the catalog changes, drop cart lines that no
+  // longer exist (deleted item / removed variant) or exceed remaining stock.
   items: [],
-  setItems: (items) => set({ items }),
+  setItems: (items) => set(state => ({ items, ...pruneCart(items, state) })),
+
+  // Transient message shown by <Toast />
+  toast: null,
+  showToast: (msg, tone = 'info') => {
+    clearTimeout(toastTimer)
+    set({ toast: { id: Date.now(), msg, tone } })
+    toastTimer = setTimeout(() => set({ toast: null }), TOAST_MS)
+  },
 
   // Categories
   categories: [],
@@ -16,10 +31,17 @@ export const useStore = create((set, get) => ({
   // Cart: { [cartKey]: qty }
   // cartKey = itemId (no variants) or "itemId_variantIdx" (with variants)
   cart: {},
+  // Returns false (and explains why) when tracked stock would be exceeded.
   addToCart: (cartKey) => {
-    const cart = { ...get().cart }
-    cart[cartKey] = (cart[cartKey] || 0) + 1
-    set({ cart })
+    const { items, cart, lang, showToast } = get()
+    const { itemId } = parseCartKey(cartKey)
+    const item = items.find(i => i.id === itemId)
+    if (item?.trackStock && itemTotalQty(cart, itemId) >= (item.stock ?? 0)) {
+      showToast(t('stockLimit', lang).replace('{n}', item.stock ?? 0), 'warn')
+      return false
+    }
+    set({ cart: { ...cart, [cartKey]: (cart[cartKey] || 0) + 1 } })
+    return true
   },
   removeFromCart: (cartKey) => {
     const cart = { ...get().cart }
@@ -31,7 +53,16 @@ export const useStore = create((set, get) => ({
     }
     set({ cart })
   },
-  clearCart: () => set({ cart: {}, cartNotes: {}, cartAddons: {} }),
+  clearCart: () => set({ cart: {}, cartNotes: {}, cartAddons: {}, discount: EMPTY_DISCOUNT, payMethod: 'cash' }),
+
+  // Chosen payment method; kept here so backing out of the GCash QR screen
+  // returns to checkout with GCash still selected.
+  payMethod: 'cash',
+  setPayMethod: (payMethod) => set({ payMethod }),
+
+  // Order-level discount, shared by the cash and GCash payment screens.
+  discount: EMPTY_DISCOUNT,
+  setDiscount: (discount) => set({ discount }),
 
   // Per-line notes: { [cartKey]: string }
   cartNotes: {},
@@ -95,7 +126,7 @@ export const useStore = create((set, get) => ({
     localStorage.setItem('bigText', v ? '1' : '0')
     set({ bigText: v })
   },
-  theme: localStorage.getItem('theme') || 'light',
+  theme: localStorage.getItem('theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   setTheme: (theme) => {
     localStorage.setItem('theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
@@ -112,7 +143,45 @@ export const useStore = create((set, get) => ({
     localStorage.setItem('licenseKey', key)
     set({ licenseKey: key })
   },
+}), {
+  // A POS cart must survive an accidental refresh, an Android process kill
+  // or a service-worker update reload.
+  name: 'tindapos-cart',
+  version: 1,
+  partialize: ({ cart, cartNotes, cartAddons }) => ({ cart, cartNotes, cartAddons }),
 }))
+
+// Remove cart lines that can no longer be sold: deleted items, variants that
+// were removed, stale add-on indices, and quantities beyond tracked stock.
+export function pruneCart(items, { cart, cartNotes, cartAddons }) {
+  const byId = new Map(items.map(i => [i.id, i]))
+  const stockLeft = new Map()
+  const nextCart = {}
+  for (const [key, qty] of Object.entries(cart)) {
+    const { itemId, variantIdx } = parseCartKey(key)
+    const item = byId.get(itemId)
+    if (!item || !(qty > 0)) continue
+    const hasVariants = item.variants?.length > 0
+    const variantOk = hasVariants ? variantIdx !== null && !!item.variants[variantIdx] : variantIdx === null
+    if (!variantOk) continue
+    let q = qty
+    if (item.trackStock) {
+      const left = stockLeft.has(itemId) ? stockLeft.get(itemId) : (item.stock ?? 0)
+      q = Math.min(q, left)
+      stockLeft.set(itemId, left - q)
+    }
+    if (q > 0) nextCart[key] = q
+  }
+  const nextNotes = {}
+  const nextAddons = {}
+  for (const key of Object.keys(nextCart)) {
+    if (cartNotes[key]) nextNotes[key] = cartNotes[key]
+    const item = byId.get(parseCartKey(key).itemId)
+    const valid = (cartAddons[key] || []).filter(idx => item.addons?.[idx])
+    if (valid.length) nextAddons[key] = valid
+  }
+  return { cart: nextCart, cartNotes: nextNotes, cartAddons: nextAddons }
+}
 
 // Parse cart key into itemId + optional variantIdx
 export function parseCartKey(key) {
