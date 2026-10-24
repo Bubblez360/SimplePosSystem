@@ -1,151 +1,132 @@
+import { useState } from 'react'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import { useStore } from '../store/useStore'
 import { voidSale, getAllItems } from '../db/db'
 import { autoSync } from '../lib/sync'
 import { t } from '../i18n'
+import Sheet from './Sheet'
+import Icon from './Icon'
+import { peso } from './cart/useCart'
+import '../lib/lottie'
 import successAnim from '../assets/success.lottie?url'
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 export default function ReceiptModal() {
-  const { lastSale, setReceiptOpen, lang, businessName, setItems } = useStore()
+  const lastSale = useStore(s => s.lastSale)
+  const setReceiptOpen = useStore(s => s.setReceiptOpen)
+  const setItems = useStore(s => s.setItems)
+  const showToast = useStore(s => s.showToast)
+  const lang = useStore(s => s.lang)
+  const businessName = useStore(s => s.businessName)
+  const [busy, setBusy] = useState(false)
   if (!lastSale) return null
 
   const { id, ref, date, lines, total, method, cashGiven, change, discount } = lastSale
   const isFil = lang === 'fil'
-
-  function handleDone() {
-    setReceiptOpen(false)
-  }
+  const close = () => setReceiptOpen(false)
 
   async function handleVoid() {
-    if (!id || !window.confirm(t('voidConfirm', lang))) return
-    await voidSale(id)
-    // Restored stock must show in the catalog right away.
-    setItems(await getAllItems())
-    autoSync()
-    setReceiptOpen(false)
+    if (!id || busy || !window.confirm(t('voidConfirm', lang))) return
+    setBusy(true)
+    try {
+      await voidSale(id)
+      setItems(await getAllItems()) // restored stock must show in the catalog right away
+      autoSync()
+      showToast(t('voided', lang))
+      close()
+    } catch {
+      showToast(t('saleError', lang), 'error')
+      setBusy(false)
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-bg overflow-y-auto">
-      {/* Success header */}
-      <div className="flex flex-col items-center pt-10 pb-6 px-4" style={{ background: 'var(--amber-bg)' }}>
-        <div className="w-56 h-56 -mt-6">
-          <DotLottieReact
-            src={successAnim}
-            autoplay
-            loop={false}
-          />
-        </div>
-        <p className="text-xl font-extrabold text-text tracking-tight">
-          {isFil ? 'Bayad na!' : 'Payment received!'}
-        </p>
-        <p className="text-sm text-muted mt-0.5 font-medium">
-          {method === 'gcash' ? 'GCash' : 'Cash'}
-        </p>
-      </div>
+    <Sheet variant="full" hideHeader title={isFil ? 'Resibo' : 'Receipt'} onClose={close}>
+      <div className="min-h-full flex flex-col items-center px-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
+        <div className="w-full max-w-md flex flex-col items-center">
+          <div className="w-28 h-28 -mb-1">
+            <DotLottieReact src={successAnim} autoplay={!prefersReducedMotion()} loop={false} />
+          </div>
+          <h2 className="text-2xl font-extrabold tracking-tight">{isFil ? 'Bayad na!' : 'Payment received!'}</h2>
+          <p className="mt-1 mb-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-muted">
+            <Icon name={method === 'gcash' ? 'phone' : 'banknote'} size={16} />
+            {method === 'gcash' ? 'GCash' : t('cash', lang)}
+          </p>
 
-      {/* Receipt body */}
-      <div className="flex-1 px-4 py-4 flex flex-col gap-0 w-full max-w-md mx-auto">
-        <div className="bg-surface rounded-[18px] overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-
-          {/* Store name + ref */}
-          <div className="px-4 py-4 flex flex-col items-center border-b border-dashed border-border">
-            <p className="text-base font-extrabold text-text">{businessName || 'TindaPOS'}</p>
-            <p className="text-[11px] text-faint font-mono mt-0.5">
-              {date ? new Date(date).toLocaleString(isFil ? 'fil-PH' : 'en-PH', {
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-              }) : ''}
-            </p>
-            {ref && (
-              <p className="text-[10px] font-mono font-bold text-faint mt-1 tracking-widest">
-                #{ref}
+          {/* Paper receipt */}
+          <article className="receipt-paper w-full bg-surface text-text rounded-t-2xl shadow-card border border-b-0 border-border">
+            <header className="px-5 pt-5 pb-4 text-center border-b border-dashed border-border">
+              <p className="text-[17px] font-extrabold">{businessName || t('appName', lang)}</p>
+              <p className="font-mono text-[12px] text-muted mt-1">
+                {date ? new Date(date).toLocaleString(isFil ? 'fil-PH' : 'en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
               </p>
-            )}
-          </div>
+              {ref && <p className="font-mono text-[12px] font-bold tracking-widest text-faint mt-0.5">#{ref}</p>}
+            </header>
 
-          {/* Items */}
-          <div className="px-4 py-2">
-            {lines.map((line, i) => (
-              <div key={i} className="flex items-start justify-between py-2 border-b border-dashed border-border last:border-0">
-                <div className="flex-1 min-w-0 pr-3">
-                  <p className="text-sm font-semibold text-text leading-snug">{line.name}</p>
-                  {line.addons?.length > 0 && (
-                    <p className="text-[11px] text-muted mt-0.5">+ {line.addons.join(', ')}</p>
-                  )}
-                  {line.note && (
-                    <p className="text-[11px] text-faint mt-0.5 italic">"{line.note}"</p>
-                  )}
-                  <p className="text-xs text-faint mt-0.5">× {line.qty}</p>
+            <ul className="px-5 py-1 divide-y divide-dashed divide-border">
+              {lines.map((line, i) => (
+                <li key={i} className="flex items-start justify-between gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-bold leading-snug">{line.name}</p>
+                    {line.addons?.length > 0 && <p className="text-[12px] text-muted">+ {line.addons.join(', ')}</p>}
+                    {line.note && <p className="text-[12px] text-faint italic">“{line.note}”</p>}
+                    <p className="font-mono text-[12px] text-muted">× {line.qty}</p>
+                  </div>
+                  <p className="font-mono text-[14px] font-medium shrink-0">{peso(line.subtotal)}</p>
+                </li>
+              ))}
+            </ul>
+
+            <dl className="mx-5 pt-3 pb-4 border-t-2 border-dashed border-amber flex flex-col gap-1.5">
+              {discount?.amount > 0 && (
+                <div className="flex justify-between text-[13px]">
+                  <dt className="text-muted">{t('discount', lang)}</dt>
+                  <dd className="font-mono font-medium text-green">−{peso(discount.amount)}</dd>
                 </div>
-                <p className="font-mono text-sm font-semibold text-text flex-shrink-0">
-                  ₱{line.subtotal.toFixed(2)}
-                </p>
+              )}
+              <div className="flex justify-between items-baseline">
+                <dt className="text-[13px] font-extrabold uppercase tracking-wide">{t('totalAmount', lang)}</dt>
+                <dd className="font-mono text-[28px] font-medium leading-none">{peso(total)}</dd>
               </div>
-            ))}
-          </div>
+              {method === 'cash' && Number(cashGiven) > 0 && (
+                <>
+                  <div className="flex justify-between text-[13px]">
+                    <dt className="text-muted">{isFil ? 'Ibinigay' : 'Cash given'}</dt>
+                    <dd className="font-mono">{peso(cashGiven)}</dd>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <dt className="text-[13px] font-bold text-green">{t('change', lang)}</dt>
+                    <dd className="font-mono text-[20px] font-medium text-green">{peso(change)}</dd>
+                  </div>
+                </>
+              )}
+            </dl>
 
-          {/* Totals */}
-          <div className="px-4 py-3 flex flex-col gap-1.5" style={{ background: 'var(--amber-bg)', borderTop: '2px dashed var(--amber)' }}>
-            {discount?.amount > 0 && (
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted">{isFil ? 'Diskwento' : 'Discount'}</p>
-                <p className="font-mono text-sm font-semibold" style={{ color: 'var(--green)' }}>
-                  -₱{discount.amount.toFixed(2)}
-                </p>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-extrabold text-amber-dark uppercase tracking-wide">
-                {t('totalAmount', lang)}
-              </p>
-              <p className="font-mono text-2xl font-bold text-amber-dark">₱{total.toFixed(2)}</p>
-            </div>
-            {method === 'cash' && cashGiven && (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted">{isFil ? 'Ibinigay' : 'Cash given'}</p>
-                  <p className="font-mono text-sm text-text">₱{parseFloat(cashGiven).toFixed(2)}</p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold" style={{ color: 'var(--green)' }}>
-                    {isFil ? 'Sukli' : 'Change'}
-                  </p>
-                  <p className="font-mono text-lg font-bold" style={{ color: 'var(--green)' }}>
-                    ₱{parseFloat(change || 0).toFixed(2)}
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Thank you */}
-          <div className="px-4 py-3 flex items-center justify-center border-t border-dashed border-border">
-            <p className="text-xs text-faint font-medium">
-              {isFil ? 'Salamat sa inyong pagbili! 🙏' : 'Thank you for your purchase! 🙏'}
+            <p className="px-5 pb-6 text-center text-[12px] font-semibold text-faint">
+              {isFil ? 'Salamat sa inyong pagbili!' : 'Thank you for your purchase!'}
             </p>
-          </div>
+          </article>
         </div>
       </div>
 
-      {/* Done button */}
-      <div className="px-4 pt-2 w-full max-w-md mx-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}>
-        <button
-          onClick={handleDone}
-          className="w-full h-[56px] rounded-[16px] font-extrabold text-base tracking-wide text-white"
-          style={{ background: 'var(--amber)', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}
-        >
-          {isFil ? 'Tapos na' : 'Done'}
-        </button>
-        {id && (
-          <button
-            onClick={handleVoid}
-            className="w-full h-11 mt-2 rounded-[14px] font-bold text-sm"
-            style={{ color: 'var(--error)', background: 'var(--error-light)' }}
-          >
-            {t('voidSale', lang)}
+      <div
+        className="sticky bottom-0 px-4 pt-3 bg-gradient-to-t from-bg from-70% to-transparent"
+        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className="max-w-md mx-auto flex flex-col gap-2">
+          <button type="button" data-autofocus onClick={close} className="btn-primary w-full h-14 text-base">
+            {isFil ? 'Tapos na' : 'Done'}
           </button>
-        )}
+          {id && (
+            <button type="button" onClick={handleVoid} disabled={busy} className="btn-danger w-full">
+              <Icon name="ban" size={18} />
+              {t('voidSale', lang)}
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+    </Sheet>
   )
 }

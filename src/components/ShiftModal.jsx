@@ -1,163 +1,132 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
-import { getCurrentShift, openShift, closeShift, getTodaySales } from '../db/db'
+import { getCurrentShift, openShift, closeShift, getSalesByRange } from '../db/db'
 import { autoSync } from '../lib/sync'
 import { t } from '../i18n'
+import Sheet from './Sheet'
+import Icon from './Icon'
+import AmountInput from './AmountInput'
+import { peso } from './cart/useCart'
 
 export default function ShiftModal() {
-  const { lang, setShiftModalOpen, currentShift, setCurrentShift } = useStore()
+  const lang = useStore(s => s.lang)
+  const setShiftModalOpen = useStore(s => s.setShiftModalOpen)
+  const currentShift = useStore(s => s.currentShift)
+  const setCurrentShift = useStore(s => s.setCurrentShift)
+  const showToast = useStore(s => s.showToast)
   const [floatInput, setFloatInput] = useState('')
   const [summary, setSummary] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const isFil = lang === 'fil'
+  const close = () => setShiftModalOpen(false)
 
-  useEffect(() => {
-    getCurrentShift().then(setCurrentShift)
-  }, [setCurrentShift])
+  useEffect(() => { getCurrentShift().then(setCurrentShift) }, [setCurrentShift])
 
-  async function handleOpen() {
-    setLoading(true)
-    const float = parseFloat(floatInput || 0)
-    const shift = await openShift(float)
-    setCurrentShift(shift)
-    setLoading(false)
-    setShiftModalOpen(false)
+  async function run(action) {
+    setBusy(true)
+    try {
+      await action()
+    } catch {
+      showToast(t('saleError', lang), 'error')
+    } finally {
+      setBusy(false)
+    }
   }
 
-  async function handleClose() {
-    setLoading(true)
-    const sales = await getTodaySales()
-    const shiftSales = currentShift
-      ? sales.filter(s => new Date(s.date) >= new Date(currentShift.openedAt))
-      : sales
-    const record = await closeShift(shiftSales)
-    setSummary(record)
+  const handleOpen = () => run(async () => {
+    setCurrentShift(await openShift(Number(floatInput) || 0))
+    close()
+  })
+
+  // Sales since the shift opened — not just "today", so a shift that crosses
+  // midnight still counts everything. closeShift() drops voided sales.
+  const handleClose = () => run(async () => {
+    const sales = await getSalesByRange(new Date(currentShift.openedAt), new Date())
+    setSummary(await closeShift(sales))
     setCurrentShift(null)
-    setLoading(false)
-    // Back up the day's sales on shift close (fire-and-forget, never blocks).
-    autoSync()
-  }
+    autoSync() // back up the day's sales on close (fire-and-forget)
+  })
+
+  const title = summary ? t('shiftSummary', lang) : currentShift ? t('closeShift', lang) : t('openShift', lang)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm">
-      <div className="w-full bg-bg rounded-t-[24px] max-h-[80vh] flex flex-col max-w-2xl mx-auto"
-        style={{ boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}>
-
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-border" />
-        </div>
-
-        <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
-          <p className="text-xl font-extrabold text-text">
-            {currentShift ? t('closeShift', lang) : t('openShift', lang)}
-          </p>
-          <button
-            onClick={() => setShiftModalOpen(false)}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-muted text-lg"
-            style={{ background: 'var(--surface-2)' }}
-          >×</button>
-        </div>
-
-        <div className="px-5 sheet-pb flex flex-col gap-4 overflow-y-auto">
-
-          {summary ? (
-            /* Closed shift summary */
-            <div className="flex flex-col gap-3">
-              <div className="bg-amber-light border border-amber rounded-card p-4">
-                <p className="text-xs font-bold text-amber-dark uppercase tracking-wide mb-2">{t('shiftSummary', lang)}</p>
-                <p className="font-mono text-3xl font-medium text-amber-dark">₱{summary.totalSales?.toFixed(2)}</p>
-                <p className="text-xs text-amber-dark opacity-70 mt-1">{summary.transactionCount} {t('transactions', lang)}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-surface border border-border rounded-card p-3">
-                  <p className="text-[10px] font-bold text-muted uppercase tracking-wide mb-1">💵 {t('shiftCash', lang)}</p>
-                  <p className="font-mono text-lg font-bold text-text">₱{summary.cashSales?.toFixed(2)}</p>
-                </div>
-                <div className="bg-green-light border border-green rounded-card p-3">
-                  <p className="text-[10px] font-bold text-green uppercase tracking-wide mb-1">💚 {t('shiftGcash', lang)}</p>
-                  <p className="font-mono text-lg font-bold text-green">₱{summary.gcashSales?.toFixed(2)}</p>
-                </div>
-              </div>
-
-              <div className="bg-surface border border-border rounded-card p-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-muted">{t('openingFloat', lang)}</p>
-                  <p className="font-mono font-bold text-text">₱{summary.openingFloat?.toFixed(2)}</p>
-                </div>
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
-                  <p className="text-sm font-bold text-text">{t('expectedCash', lang)}</p>
-                  <p className="font-mono font-bold text-amber-dark">₱{summary.expectedCash?.toFixed(2)}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShiftModalOpen(false)}
-                className="w-full h-[56px] rounded-[16px] font-extrabold text-base"
-                style={{ background: 'var(--amber)', color: '#fff' }}
-              >
-                OK
-              </button>
+    <Sheet title={title} closeLabel={t('close', lang)} onClose={close}>
+      <div className="px-5 pb-5 sheet-pb flex flex-col gap-4">
+        {summary ? (
+          <>
+            <div className="rounded-card bg-amber-light border border-amber/40 p-5">
+              <p className="eyebrow !text-amber-ink">{t('totalAmount', lang)}</p>
+              <p className="font-mono text-[40px] font-medium leading-none text-text mt-1">{peso(summary.totalSales)}</p>
+              <p className="text-[13px] font-semibold text-amber-ink mt-2">
+                {summary.transactionCount} {t('transactions', lang)}
+                {summary.voidedCount > 0 && ` · ${summary.voidedCount} ${t('voided', lang).toLowerCase()}`}
+              </p>
             </div>
-          ) : currentShift ? (
-            /* Close shift form */
-            <div className="flex flex-col gap-4">
-              <div className="bg-surface-2 border border-border rounded-card p-3">
-                <p className="text-xs font-bold text-muted uppercase tracking-wide">{t('shiftOpen', lang)}</p>
-                <p className="text-sm text-text mt-1">
-                  {new Date(currentShift.openedAt).toLocaleString(lang === 'fil' ? 'fil-PH' : 'en-PH')}
-                </p>
-                <p className="text-xs text-muted mt-0.5">
-                  {t('openingFloat', lang)}: <span className="font-mono font-bold">₱{currentShift.openingFloat?.toFixed(2)}</span>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="card p-4">
+                <p className="eyebrow flex items-center gap-1.5"><Icon name="banknote" size={14} />{t('shiftCash', lang)}</p>
+                <p className="font-mono text-[20px] font-medium mt-1">{peso(summary.cashSales)}</p>
+              </div>
+              <div className="rounded-card bg-green-light border border-green/40 p-4">
+                <p className="eyebrow !text-green flex items-center gap-1.5"><Icon name="phone" size={14} />{t('shiftGcash', lang)}</p>
+                <p className="font-mono text-[20px] font-medium text-green mt-1">{peso(summary.gcashSales)}</p>
+              </div>
+            </div>
+
+            <dl className="card p-4 flex flex-col gap-2">
+              <div className="flex justify-between text-[14px]">
+                <dt className="text-muted">{t('openingFloat', lang)}</dt>
+                <dd className="font-mono font-medium">{peso(summary.openingFloat)}</dd>
+              </div>
+              <div className="flex justify-between items-baseline pt-2 border-t border-border">
+                <dt className="text-[14px] font-bold">{t('expectedCash', lang)}</dt>
+                <dd className="font-mono text-[22px] font-medium text-amber-ink">{peso(summary.expectedCash)}</dd>
+              </div>
+            </dl>
+
+            <button type="button" data-autofocus onClick={close} className="btn-primary w-full h-14 text-base">OK</button>
+          </>
+        ) : currentShift ? (
+          <>
+            <div className="card p-4 flex items-center gap-3">
+              <span className="w-11 h-11 rounded-xl bg-amber-light text-amber-ink flex items-center justify-center shrink-0">
+                <Icon name="clock" size={22} />
+              </span>
+              <div className="min-w-0">
+                <p className="eyebrow">{t('shiftOpen', lang)}</p>
+                <p className="text-[14px] font-bold">{new Date(currentShift.openedAt).toLocaleString(isFil ? 'fil-PH' : 'en-PH')}</p>
+                <p className="text-[12px] text-muted">
+                  {t('openingFloat', lang)}: <span className="font-mono font-medium">{peso(currentShift.openingFloat)}</span>
                 </p>
               </div>
-
-              <button
-                onClick={handleClose}
-                disabled={loading}
-                className="w-full h-[56px] rounded-[16px] font-extrabold text-base"
-                style={{ background: loading ? 'var(--border)' : 'var(--error)', color: loading ? 'var(--text-faint)' : '#fff' }}
-              >
-                {loading ? '...' : t('closeShift', lang)}
-              </button>
             </div>
-          ) : (
-            /* Open shift form */
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-bold text-muted uppercase tracking-wide block mb-2">
-                  {t('openingFloat', lang)}
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-semibold text-muted text-base">₱</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={floatInput}
-                    onChange={e => setFloatInput(e.target.value)}
-                    placeholder="0"
-                    className="w-full h-14 rounded-[14px] border-2 pl-9 pr-4 font-mono text-2xl font-semibold focus:outline-none transition-colors"
-                    style={{ borderColor: floatInput ? 'var(--amber)' : 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-                  />
-                </div>
-                <p className="text-xs text-muted mt-1.5">
-                  {lang === 'fil' ? 'Ilagay ang pera na nasa kahon bago magsimula' : 'Enter the cash in the drawer before you start'}
-                </p>
-              </div>
-
-              <button
-                onClick={handleOpen}
-                disabled={loading}
-                className="w-full h-[56px] rounded-[16px] font-extrabold text-base"
-                style={{ background: loading ? 'var(--border)' : 'var(--amber)', color: loading ? 'var(--text-faint)' : '#fff',
-                  boxShadow: loading ? 'none' : '0 4px 20px rgba(245,158,11,0.4)' }}
-              >
-                {loading ? '...' : t('openShift', lang)}
-              </button>
+            <button type="button" onClick={handleClose} disabled={busy} className="btn-danger w-full h-14 text-base">
+              {busy ? '…' : t('closeShift', lang)}
+            </button>
+          </>
+        ) : (
+          <>
+            <div>
+              <label htmlFor="shift-float" className="field-label">{t('openingFloat', lang)}</label>
+              <AmountInput
+                id="shift-float"
+                size="lg"
+                data-autofocus
+                value={floatInput}
+                onChange={setFloatInput}
+                onKeyDown={e => e.key === 'Enter' && !busy && handleOpen()}
+              />
+              <p className="text-[12px] text-muted mt-2">
+                {isFil ? 'Ilagay ang pera na nasa kahon bago magsimula' : 'Enter the cash in the drawer before you start'}
+              </p>
             </div>
-          )}
-        </div>
+            <button type="button" onClick={handleOpen} disabled={busy} className="btn-primary w-full h-14 text-base">
+              {busy ? '…' : t('openShift', lang)}
+            </button>
+          </>
+        )}
       </div>
-    </div>
+    </Sheet>
   )
 }

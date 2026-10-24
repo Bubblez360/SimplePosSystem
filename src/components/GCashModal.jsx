@@ -1,88 +1,104 @@
-import { useStore, cartTotal, cartLines } from '../store/useStore'
-import { recordSale } from '../db/db'
-import { printReceipt, isPrinterConnected } from '../utils/printer'
+import { useState } from 'react'
+import { useStore } from '../store/useStore'
+import { buildSale } from '../lib/checkout'
+import { finalizeSale } from '../lib/finalizeSale'
 import { t } from '../i18n'
+import Sheet from './Sheet'
+import Icon from './Icon'
+import { useCart, peso } from './cart/useCart'
 
+// Customer-facing QR screen. Always charges the same discounted amount that
+// the checkout sheet showed (the discount lives in the store).
 export default function GCashModal() {
-  const { items, cart, cartAddons, cartNotes, clearCart, setGcashOpen, setLastSale, setReceiptOpen, gcashQR, lang, businessName } = useStore()
-  const total = cartTotal(items, cart, cartAddons)
-  const lines = cartLines(items, cart, cartAddons, cartNotes)
+  const gcashQR = useStore(s => s.gcashQR)
+  const discount = useStore(s => s.discount)
+  const setGcashOpen = useStore(s => s.setGcashOpen)
+  const setCheckoutOpen = useStore(s => s.setCheckoutOpen)
+  const setScreen = useStore(s => s.setScreen)
+  const showToast = useStore(s => s.showToast)
+  const lang = useStore(s => s.lang)
+  const { lines } = useCart()
+  const [busy, setBusy] = useState(false)
+
+  const sale = buildSale({ lines, method: 'gcash', discount })
+
+  function backToCheckout() {
+    setGcashOpen(false)
+    setCheckoutOpen(true)
+  }
 
   async function handlePaid() {
-    const saleData = {
-      total,
-      itemCount: lines.reduce((s, l) => s + l.qty, 0),
-      method: 'gcash',
-      lines: lines.map(l => ({
-        itemId: l.id,
-        name: l.displayName,
-        qty: l.qty,
-        subtotal: l.subtotal,
-        addons: l.selectedAddons.map(a => a.name),
-        note: l.note || '',
-      })),
+    if (busy) return
+    setBusy(true)
+    try {
+      await finalizeSale(sale)
+    } catch {
+      showToast(t('saleError', lang), 'error')
+      setBusy(false)
     }
-    const sale = await recordSale(saleData)
-    if (isPrinterConnected()) {
-      printReceipt({
-        businessName,
-        ref: sale?.ref,
-        date: new Date().toISOString(),
-        lines: saleData.lines,
-        total,
-        method: 'gcash',
-        lang,
-      }).catch(() => {})
-    }
-    clearCart()
-    setGcashOpen(false)
-    setLastSale({
-      id: sale?.id,
-      ref: sale?.ref,
-      date: new Date().toISOString(),
-      lines: saleData.lines,
-      total,
-      method: 'gcash',
-    })
-    setReceiptOpen(true)
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-between px-4"
-      style={{ paddingTop: 'calc(2rem + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}>
-      <div className="text-center">
-        <p className="text-white/60 text-sm font-semibold mb-1">{t('totalAmount', lang)}</p>
-        <p className="font-mono text-4xl font-medium text-amber">₱{total.toFixed(2)}</p>
-      </div>
+    <Sheet
+      variant="full"
+      tone="dark"
+      hideHeader
+      title={t('gcashQR', lang)}
+      onClose={backToCheckout}
+    >
+      <div
+        className="min-h-full flex flex-col items-center justify-between gap-6 px-5"
+        style={{
+          paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
+        <div className="text-center">
+          <p className="eyebrow !text-white/60 mb-1">{t('totalAmount', lang)}</p>
+          <p className="font-mono text-[44px] font-medium leading-none text-amber">{peso(sale.total)}</p>
+          {sale.discount && (
+            <p className="mt-2 text-[13px] font-semibold text-white/60">
+              {t('discount', lang)} −{peso(sale.discount.amount)}
+            </p>
+          )}
+        </div>
 
-      <div className="flex-1 flex items-center justify-center w-full px-4">
-        {gcashQR ? (
-          <div className="bg-white rounded-2xl p-3 w-full max-w-xs">
-            <img src={gcashQR} alt="GCash QR" className="w-full object-contain rounded-xl" />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/30 flex items-center justify-center">
-              <span className="text-3xl">📷</span>
+        <div className="flex-1 flex items-center justify-center w-full">
+          {gcashQR ? (
+            <div className="bg-white rounded-3xl p-4 w-full max-w-[19rem] shadow-float">
+              <img src={gcashQR} alt={t('gcashQR', lang)} className="w-full aspect-square object-contain rounded-xl" />
             </div>
-            <p className="text-white/60 text-sm font-semibold">{t('noGcashQR', lang)}</p>
-            <p className="text-white/40 text-xs">{t('noQRHint', lang)}</p>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 text-center max-w-[16rem]">
+              <span className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/30 text-white/60 flex items-center justify-center">
+                <Icon name="camera" size={28} />
+              </span>
+              <p className="text-[15px] font-bold text-white/80">{t('noGcashQR', lang)}</p>
+              <p className="text-[13px] text-white/55">{t('noQRHint', lang)}</p>
+              <button
+                type="button"
+                className="btn-secondary btn-sm mt-1"
+                onClick={() => { setGcashOpen(false); setScreen('setting') }}
+              >
+                <Icon name="gear" size={16} />
+                {t('setting', lang)}
+              </button>
+            </div>
+          )}
+        </div>
 
-      <div className="text-center mb-4">
-        <p className="text-white/70 text-sm font-semibold">{t('scanQR', lang)}</p>
+        <div className="w-full max-w-sm flex flex-col gap-2">
+          <p className="text-center text-[14px] font-semibold text-white/70 mb-1">{t('scanQR', lang)}</p>
+          <button type="button" onClick={handlePaid} disabled={busy} className="btn-success w-full h-14 text-base">
+            <Icon name="check" size={22} strokeWidth={2.6} />
+            {t('confirmPayment', lang)}
+          </button>
+          <button type="button" onClick={backToCheckout} className="btn-ghost w-full !text-white/70 hover:!bg-white/10">
+            <Icon name="arrow-left" size={18} />
+            {t('cancel', lang)}
+          </button>
+        </div>
       </div>
-
-      <div className="w-full flex flex-col gap-2 max-w-sm">
-        <button onClick={handlePaid} className="w-full h-14 rounded-btn bg-green text-white font-bold text-base">
-          {t('confirmPayment', lang)}
-        </button>
-        <button onClick={() => setGcashOpen(false)} className="w-full h-10 rounded-btn text-white/50 font-semibold text-sm">
-          {t('cancel', lang)}
-        </button>
-      </div>
-    </div>
+    </Sheet>
   )
 }

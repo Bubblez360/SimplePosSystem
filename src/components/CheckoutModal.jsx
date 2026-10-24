@@ -1,47 +1,51 @@
 import { useState } from 'react'
-import { useStore, cartTotal, cartLines } from '../store/useStore'
-import { recordSale } from '../db/db'
-import { printReceipt, isPrinterConnected } from '../utils/printer'
+import { useStore } from '../store/useStore'
+import { buildSale, computeDiscount } from '../lib/checkout'
+import { finalizeSale } from '../lib/finalizeSale'
 import { t } from '../i18n'
+import Sheet from './Sheet'
+import Icon from './Icon'
+import AmountInput from './AmountInput'
+import { useCart, peso } from './cart/useCart'
+
+const DENOMINATIONS = [20, 50, 100, 200, 500, 1000]
 
 export default function CheckoutModal() {
-  const {
-    items, cart, cartNotes, setCartNote, cartAddons, setCartAddons,
-    clearCart, setCheckoutOpen, setGcashOpen, setLastSale, setReceiptOpen, lang, businessName,
-  } = useStore()
-  const total = cartTotal(items, cart, cartAddons)
-  const lines = cartLines(items, cart, cartAddons, cartNotes)
-  const [method, setMethod] = useState('cash')
+  const items = useStore(s => s.items)
+  const cartAddons = useStore(s => s.cartAddons)
+  const setCartAddons = useStore(s => s.setCartAddons)
+  const setCartNote = useStore(s => s.setCartNote)
+  const discount = useStore(s => s.discount)
+  const setDiscount = useStore(s => s.setDiscount)
+  const setCheckoutOpen = useStore(s => s.setCheckoutOpen)
+  const setGcashOpen = useStore(s => s.setGcashOpen)
+  const showToast = useStore(s => s.showToast)
+  const lang = useStore(s => s.lang)
+  const { lines, total, count } = useCart()
+
+  const method = useStore(s => s.payMethod)
+  const setMethod = useStore(s => s.setPayMethod)
   const [cashGiven, setCashGiven] = useState('')
-  const [expandedNotes, setExpandedNotes] = useState(new Set())
-  const [showDiscount, setShowDiscount] = useState(false)
-  const [discountType, setDiscountType] = useState('flat')
-  const [discountInput, setDiscountInput] = useState('')
+  const [noteOpen, setNoteOpen] = useState(() => new Set())
+  const [showDiscount, setShowDiscount] = useState(() => Number(discount.value) > 0)
+  const [busy, setBusy] = useState(false)
 
-  const rawDiscount = parseFloat(discountInput || 0)
-  const discountAmount = discountType === 'percent'
-    ? Math.min(total, total * rawDiscount / 100)
-    : Math.min(total, rawDiscount)
-  const discountedTotal = Math.max(0, total - discountAmount)
+  const discountAmount = computeDiscount(total, discount)
+  const payable = Math.max(0, total - discountAmount)
+  const received = Number(cashGiven) || 0
+  const shortBy = Math.max(0, payable - received)
+  const change = method === 'cash' ? Math.max(0, received - payable) : 0
+  const canConfirm = !busy && lines.length > 0 && (method === 'gcash' || shortBy === 0)
+  const quickCash = DENOMINATIONS.filter(v => v >= Math.floor(payable))
+  const isFil = lang === 'fil'
 
-  const change = method === 'cash' ? Math.max(0, parseFloat(cashGiven || 0) - discountedTotal) : 0
-  const canConfirm = method === 'gcash' || (method === 'cash' && parseFloat(cashGiven || 0) >= discountedTotal)
-  const denominations = [20, 50, 100, 200, 500, 1000].filter(v => v >= Math.floor(discountedTotal))
-
-  function toggleNote(cartKey) {
-    setExpandedNotes(s => {
-      const next = new Set(s)
-      next.has(cartKey) ? next.delete(cartKey) : next.add(cartKey)
-      return next
-    })
+  function toggleAddon(cartKey, idx) {
+    const current = cartAddons[cartKey] || []
+    setCartAddons(cartKey, current.includes(idx) ? current.filter(i => i !== idx) : [...current, idx])
   }
 
-  function toggleAddon(cartKey, addonIdx) {
-    const current = cartAddons[cartKey] || []
-    const updated = current.includes(addonIdx)
-      ? current.filter(i => i !== addonIdx)
-      : [...current, addonIdx]
-    setCartAddons(cartKey, updated)
+  function openNote(cartKey) {
+    setNoteOpen(prev => new Set(prev).add(cartKey))
   }
 
   async function handleConfirm() {
@@ -51,306 +55,241 @@ export default function CheckoutModal() {
       setGcashOpen(true)
       return
     }
-    const saleData = {
-      total: discountedTotal,
-      itemCount: lines.reduce((s, l) => s + l.qty, 0),
-      method: 'cash',
-      discount: discountAmount > 0 ? { type: discountType, amount: discountAmount } : null,
-      lines: lines.map(l => ({
-        itemId: l.id,
-        name: l.displayName,
-        qty: l.qty,
-        subtotal: l.subtotal,
-        addons: l.selectedAddons.map(a => a.name),
-        note: l.note || '',
-      })),
+    setBusy(true)
+    try {
+      await finalizeSale(buildSale({ lines, method: 'cash', discount }), { cashGiven, change })
+    } catch {
+      showToast(t('saleError', lang), 'error')
+      setBusy(false)
     }
-    const sale = await recordSale(saleData)
-    if (isPrinterConnected()) {
-      printReceipt({
-        businessName,
-        ref: sale?.ref,
-        date: new Date().toISOString(),
-        lines: saleData.lines,
-        total: discountedTotal,
-        method: 'cash',
-        cashGiven,
-        change,
-        discount: saleData.discount,
-        lang,
-      }).catch(() => {})
-    }
-    clearCart()
-    setCashGiven('')
-    setCheckoutOpen(false)
-    setLastSale({
-      id: sale?.id,
-      ref: sale?.ref,
-      date: new Date().toISOString(),
-      lines: saleData.lines,
-      total: discountedTotal,
-      method: 'cash',
-      cashGiven,
-      change,
-      discount: saleData.discount,
-    })
-    setReceiptOpen(true)
   }
 
+  const ctaLabel = method === 'gcash'
+    ? t('gcashQR', lang)
+    : shortBy > 0
+      ? t('shortBy', lang).replace('{n}', peso(shortBy))
+      : t('confirmPayment', lang)
+
+  const footer = (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-end justify-between">
+        <span className="eyebrow">{t('totalAmount', lang)}</span>
+        <span className="text-right">
+          {discountAmount > 0 && (
+            <span className="block font-mono text-[13px] text-muted line-through leading-none mb-1">{peso(total)}</span>
+          )}
+          <span className="block font-mono text-[30px] font-medium leading-none text-text">{peso(payable)}</span>
+        </span>
+      </div>
+      <button type="button" onClick={handleConfirm} disabled={!canConfirm} className="btn-primary w-full h-14 text-base">
+        {method === 'gcash' ? <Icon name="qr" size={20} /> : shortBy === 0 && <Icon name="check" size={20} strokeWidth={2.6} />}
+        {ctaLabel}
+      </button>
+    </div>
+  )
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm">
-      <div className="bg-bg rounded-t-[24px] max-h-[92vh] flex flex-col w-full max-w-2xl mx-auto"
-        style={{ boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}>
-
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-border" />
-        </div>
-
-        {/* Header */}
-        <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
-          <div>
-            <p className="text-xl font-extrabold text-text tracking-tight">{t('checkout', lang)}</p>
-            <p className="text-xs text-muted font-medium mt-0.5">
-              {lines.length} {t('items', lang)} · ₱{total.toFixed(2)}
-            </p>
-          </div>
-          <button
-            onClick={() => setCheckoutOpen(false)}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-muted text-lg leading-none"
-            style={{ background: 'var(--surface-2)' }}
-          >×</button>
-        </div>
-
-        <div className="overflow-y-auto flex-1 px-4 pb-2 flex flex-col gap-3">
-
-          {/* ── Receipt card ── */}
-          <div className="bg-surface rounded-[16px] overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-            <div className="px-4 py-2.5 border-b border-dashed border-border flex items-center justify-between">
-              <p className="text-[10px] font-extrabold text-faint uppercase tracking-widest">Order</p>
-              <p className="text-[10px] font-extrabold text-faint uppercase tracking-widest">Subtotal</p>
-            </div>
-
+    <Sheet
+      title={t('checkout', lang)}
+      subtitle={`${count} ${t('items', lang)} · ${peso(total)}`}
+      closeLabel={t('close', lang)}
+      onClose={() => setCheckoutOpen(false)}
+      footer={footer}
+    >
+      <div className="px-4 pb-4 flex flex-col gap-4">
+        {/* ── Order ── */}
+        <section className="card overflow-hidden" aria-label={t('currentOrder', lang)}>
+          <ul className="divide-y divide-dashed divide-border">
             {lines.map(line => {
               const item = items.find(i => i.id === line.id)
-              const hasAddons = item?.addons?.length > 0
-              const selectedAddons = cartAddons[line.cartKey] || []
+              const selected = cartAddons[line.cartKey] || []
+              const noteVisible = line.note || noteOpen.has(line.cartKey)
               return (
-                <div key={line.cartKey} className="border-b border-dashed border-border last:border-0">
-                  <div className="flex items-start gap-3 px-4 py-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 overflow-hidden"
-                      style={{ background: 'var(--surface-2)' }}>
-                      {line.photo
-                        ? <img src={line.photo} alt={line.name} className="w-full h-full object-cover" />
-                        : line.emoji || '🍱'}
+                <li key={line.cartKey} className="px-4 py-3 flex items-start gap-3">
+                  <span className="w-11 h-11 rounded-xl bg-surface-2 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                    {line.photo ? <img src={line.photo} alt="" className="w-full h-full object-cover" /> : line.emoji || '🍱'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[14px] font-bold leading-snug">{line.displayName}</p>
+                        <p className="text-[12px] font-medium text-muted font-mono">{line.qty} × {peso(line.price)}</p>
+                      </div>
+                      <p className="font-mono text-[15px] font-medium shrink-0">{peso(line.subtotal)}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-bold text-text leading-snug">{line.displayName}</p>
-                          <p className="text-xs text-muted font-medium">× {line.qty}</p>
-                        </div>
-                        <p className="font-mono text-sm font-semibold text-text flex-shrink-0 pt-0.5">
-                          ₱{line.subtotal.toFixed(2)}
-                        </p>
+
+                    {item?.addons?.length > 0 && (
+                      <div className="flex gap-1.5 mt-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-0.5">
+                        {item.addons.map((addon, idx) => {
+                          const on = selected.includes(idx)
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() => toggleAddon(line.cartKey, idx)}
+                              className="chip !min-h-[36px] !px-3 !text-[12px] gap-1"
+                            >
+                              <Icon name={on ? 'check' : 'plus'} size={14} strokeWidth={2.6} />
+                              {addon.name}
+                              <span className="font-mono">+{peso(addon.price, { compact: true })}</span>
+                            </button>
+                          )
+                        })}
                       </div>
-                      {hasAddons && (
-                        <div className="flex gap-1.5 mt-2 overflow-x-auto no-scrollbar pb-0.5">
-                          {item.addons.map((addon, idx) => {
-                            const checked = selectedAddons.includes(idx)
-                            return (
-                              <button
-                                key={idx}
-                                onClick={() => toggleAddon(line.cartKey, idx)}
-                                className="flex-shrink-0 h-7 px-2.5 rounded-full text-xs font-bold border transition-all active:scale-95"
-                                style={checked
-                                  ? { background: 'var(--amber)', color: '#fff', borderColor: 'var(--amber)' }
-                                  : { background: 'var(--surface-2)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}
-                              >
-                                {checked ? '✓ ' : '+ '}{addon.name}
-                                <span className="font-mono ml-0.5">+₱{addon.price}</span>
-                              </button>
-                            )
-                          })}
-                        </div>
+                    )}
+
+                    <div className="mt-1.5">
+                      {noteVisible ? (
+                        <input
+                          autoFocus={!line.note}
+                          value={line.note}
+                          onChange={e => setCartNote(line.cartKey, e.target.value)}
+                          placeholder={t('noteHint', lang)}
+                          aria-label={t('orderNote', lang)}
+                          maxLength={80}
+                          className="field !min-h-[40px] !text-[13px] !rounded-lg"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openNote(line.cartKey)}
+                          className="inline-flex items-center gap-1.5 min-h-[36px] text-[12px] font-bold text-muted hover:text-text cursor-pointer"
+                        >
+                          <Icon name="pencil" size={14} />
+                          {t('orderNote', lang)}
+                        </button>
                       )}
-                      <div className="mt-1.5">
-                        {line.note || expandedNotes.has(line.cartKey) ? (
-                          <input
-                            autoFocus={!line.note}
-                            value={line.note}
-                            onChange={e => setCartNote(line.cartKey, e.target.value)}
-                            placeholder={t('noteHint', lang)}
-                            className="w-full h-8 rounded-lg border px-2.5 text-xs font-medium focus:outline-none"
-                            style={{ background: 'var(--surface-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                            onFocus={e => e.target.style.borderColor = 'var(--amber)'}
-                            onBlur={e => e.target.style.borderColor = 'var(--border)'}
-                          />
-                        ) : (
-                          <button
-                            onClick={() => toggleNote(line.cartKey)}
-                            className="text-[11px] text-faint flex items-center gap-1"
-                          >
-                            <span>✏️</span>
-                            <span className="underline underline-offset-2">{t('orderNote', lang)}</span>
-                          </button>
-                        )}
-                      </div>
                     </div>
                   </div>
-                </div>
+                </li>
               )
             })}
+          </ul>
 
-            {/* Total row inside receipt */}
-            <div className="px-4 flex flex-col" style={{ background: 'var(--amber-bg)', borderTop: '2px dashed var(--amber)' }}>
-              {discountAmount > 0 && (
-                <div className="flex items-center justify-between pt-2">
-                  <p className="text-xs text-muted">{t('discount', lang)}</p>
-                  <p className="font-mono text-sm font-semibold" style={{ color: 'var(--green)' }}>
-                    -{discountType === 'percent' ? `${rawDiscount}%` : ''} ₱{discountAmount.toFixed(2)}
-                  </p>
-                </div>
-              )}
-              <div className="flex items-center justify-between py-3">
-                <p className="text-sm font-extrabold text-amber-dark uppercase tracking-wider">{t('totalAmount', lang)}</p>
-                <div className="text-right">
-                  {discountAmount > 0 && (
-                    <p className="font-mono text-xs text-muted line-through">₱{total.toFixed(2)}</p>
-                  )}
-                  <p className="font-mono text-2xl font-bold text-amber-dark">₱{discountedTotal.toFixed(2)}</p>
-                </div>
-              </div>
+          {discountAmount > 0 && (
+            <div className="flex items-center justify-between px-4 py-2.5 bg-green-light border-t border-dashed border-border">
+              <span className="text-[13px] font-bold text-green">
+                {t('discount', lang)}{discount.type === 'percent' ? ` ${discount.value}%` : ''}
+              </span>
+              <span className="font-mono text-[15px] font-medium text-green">−{peso(discountAmount)}</span>
             </div>
-          </div>
+          )}
+        </section>
 
-          {/* ── Discount toggle ── */}
-          {!showDiscount ? (
+        {/* ── Discount ── */}
+        {showDiscount ? (
+          <div>
+          <p id="discount-label" className="field-label">{t('discount', lang)}</p>
+          <div className="flex items-center gap-2">
+            <div role="group" aria-labelledby="discount-label" className="flex shrink-0 rounded-xl border border-border bg-surface p-1 gap-1">
+              {['flat', 'percent'].map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  aria-pressed={discount.type === type}
+                  onClick={() => setDiscount({ ...discount, type })}
+                  className={`min-w-[44px] h-10 px-3 rounded-lg text-[15px] font-bold font-mono cursor-pointer transition-colors ${
+                    discount.type === type ? 'bg-amber text-on-amber' : 'text-muted hover:bg-surface-2'
+                  }`}
+                >
+                  {type === 'flat' ? '₱' : '%'}
+                </button>
+              ))}
+            </div>
+            <AmountInput
+              prefix=""
+              autoFocus
+              aria-labelledby="discount-label"
+              value={discount.value}
+              onChange={value => setDiscount({ ...discount, value })}
+              className="flex-1"
+            />
             <button
-              onClick={() => setShowDiscount(true)}
-              className="text-xs text-muted flex items-center gap-1.5 px-1 -mt-1"
+              type="button"
+              className="icon-btn border border-border bg-surface !w-12 !h-12 !rounded-xl"
+              aria-label={t('removeDiscount', lang)}
+              onClick={() => { setShowDiscount(false); setDiscount({ ...discount, value: '' }) }}
             >
-              <span>🏷️</span>
-              <span className="underline underline-offset-2">{t('addDiscount', lang)}</span>
+              <Icon name="x" size={18} />
             </button>
-          ) : (
-            <div className="flex items-center gap-2 -mt-1">
-              <div className="flex rounded-lg border border-border overflow-hidden flex-shrink-0">
-                {['flat', 'percent'].map(type => (
+          </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowDiscount(true)}
+            className="self-start inline-flex items-center gap-2 min-h-[44px] px-1 text-[14px] font-bold text-muted hover:text-text cursor-pointer"
+          >
+            <Icon name="tag" size={18} />
+            {t('addDiscount', lang)}
+          </button>
+        )}
+
+        {/* ── Payment method ── */}
+        <div role="radiogroup" aria-label={t('paymentMethod', lang)} className="grid grid-cols-2 gap-2.5">
+          {[['cash', 'banknote'], ['gcash', 'phone']].map(([key, icon]) => {
+            const on = method === key
+            return (
+              <button
+                key={key}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setMethod(key)}
+                className={`tile h-[60px] rounded-btn border-2 font-bold text-[15px] flex items-center justify-center gap-2 cursor-pointer ${
+                  on
+                    ? (key === 'gcash' ? 'border-green bg-green-light text-green' : 'border-amber bg-amber-bg text-text')
+                    : 'border-border bg-surface text-muted hover:bg-surface-2'
+                }`}
+              >
+                <Icon name={icon} size={22} />
+                {t(key, lang)}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ── Cash tendered ── */}
+        {method === 'cash' && (
+          <div className="flex flex-col gap-2.5">
+            <div>
+              <label htmlFor="cash-given" className="field-label">{t('amountReceived', lang)}</label>
+              <AmountInput id="cash-given" size="lg" value={cashGiven} onChange={setCashGiven} />
+            </div>
+            {quickCash.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1" role="group" aria-label={t('amountReceived', lang)}>
+                {quickCash.map(v => (
                   <button
-                    key={type}
-                    onClick={() => setDiscountType(type)}
-                    className="h-10 px-3.5 text-sm font-bold transition-colors"
-                    style={discountType === type
-                      ? { background: 'var(--amber)', color: '#fff' }
-                      : { background: 'var(--surface)', color: 'var(--text-muted)' }}
+                    key={v}
+                    type="button"
+                    className="chip font-mono !text-[14px]"
+                    aria-pressed={cashGiven === String(v)}
+                    onClick={() => setCashGiven(String(v))}
                   >
-                    {type === 'flat' ? '₱' : '%'}
+                    ₱{v}
                   </button>
                 ))}
               </div>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={discountInput}
-                onChange={e => setDiscountInput(e.target.value)}
-                placeholder="0"
-                autoFocus
-                className="flex-1 h-10 rounded-lg border border-border px-3 text-sm font-mono font-semibold focus:outline-none bg-surface"
-                style={{ borderColor: discountInput ? 'var(--amber)' : 'var(--border)' }}
-              />
-              <button
-                onClick={() => { setShowDiscount(false); setDiscountInput('') }}
-                className="w-10 h-10 flex items-center justify-center text-faint text-base rounded-lg border border-border bg-surface flex-shrink-0"
-              >×</button>
-            </div>
-          )}
-
-          {/* ── Payment method ── */}
-          <div className="grid grid-cols-2 gap-2">
-            {[['cash', 'cash'], ['gcash', 'gcash']].map(([key, labelKey]) => (
-              <button
-                key={key}
-                onClick={() => setMethod(key)}
-                className="h-14 rounded-[14px] border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-                style={method === key
-                  ? { borderColor: 'var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber-dark)' }
-                  : { borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-muted)' }}
+            )}
+            {received > 0 && shortBy === 0 && (
+              <div
+                role="status"
+                className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-btn bg-green-light border border-green/40"
               >
-                {key === 'cash' ? (
-                  <span className="text-base">💵</span>
-                ) : (
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold flex-shrink-0"
-                    style={{ background: 'var(--green)', color: '#fff' }}>G</span>
-                )}
-                <span>{t(labelKey, lang)}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* ── Cash section ── */}
-          {method === 'cash' && (
-            <div className="flex flex-col gap-2">
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-semibold text-muted text-base">₱</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={cashGiven}
-                  onChange={e => setCashGiven(e.target.value)}
-                  placeholder={t('amountReceived', lang)}
-                  className="w-full h-14 rounded-[14px] border-2 pl-9 pr-4 font-mono text-2xl font-semibold focus:outline-none transition-colors"
-                  style={{ borderColor: cashGiven ? 'var(--amber)' : 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-                />
+                <span className="flex items-center gap-2 text-[13px] font-extrabold uppercase tracking-wide text-green">
+                  <Icon name="wallet" size={20} />
+                  {t('change', lang)}
+                </span>
+                <span className="font-mono text-[28px] font-medium leading-none text-green">{peso(change)}</span>
               </div>
-              {parseFloat(cashGiven || 0) >= discountedTotal && parseFloat(cashGiven || 0) > 0 && (
-                <div className="flex items-center justify-between px-4 py-3 rounded-[14px]"
-                  style={{ background: 'var(--green-light)', border: '1.5px solid var(--green)' }}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">💰</span>
-                    <p className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--green)' }}>{t('change', lang)}</p>
-                  </div>
-                  <p className="font-mono text-2xl font-bold" style={{ color: 'var(--green)' }}>₱{change.toFixed(2)}</p>
-                </div>
-              )}
-              {denominations.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
-                  {denominations.map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setCashGiven(String(v))}
-                      className="flex-shrink-0 h-11 px-4 rounded-[12px] text-sm font-bold border-2 transition-all active:scale-95"
-                      style={cashGiven === String(v)
-                        ? { background: 'var(--amber)', color: '#fff', borderColor: 'var(--amber)' }
-                        : { background: 'var(--surface)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}
-                    >
-                      ₱{v}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── Confirm CTA ── */}
-        <div className="px-4 pt-2 sheet-pb flex-shrink-0" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
-          <button
-            onClick={handleConfirm}
-            disabled={!canConfirm}
-            className="w-full h-[60px] rounded-[16px] font-extrabold text-base tracking-wide transition-all active:scale-[0.98]"
-            style={canConfirm
-              ? { background: 'var(--amber)', color: '#fff', boxShadow: '0 4px 20px rgba(245,158,11,0.4)' }
-              : { background: 'var(--border)', color: 'var(--text-faint)', cursor: 'not-allowed' }}
-          >
-            {method === 'gcash'
-              ? `${t('gcashQR', lang)} →`
-              : canConfirm
-                ? t('confirmPayment', lang)
-                : `₱${Math.max(0, discountedTotal - parseFloat(cashGiven || 0)).toFixed(2)} ${lang === 'fil' ? 'kulang pa' : 'more needed'}`}
-          </button>
-        </div>
+            )}
+          </div>
+        )}
+        {method === 'gcash' && (
+          <p className="text-[13px] text-muted px-1">{isFil ? 'Ipapakita ang QR sa susunod na screen.' : 'The QR code is shown on the next screen.'}</p>
+        )}
       </div>
-    </div>
+    </Sheet>
   )
 }
