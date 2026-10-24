@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Manually issue (or renew) a TindaPOS license and email it. Fallback for when
 // the PayMongo webhook isn't running: check the payment in the PayMongo
 // dashboard, then run this.
@@ -115,12 +114,15 @@ function serviceRoleKey() {
   throw new Error('No SUPABASE_SERVICE_ROLE_KEY. Set it, or run `npx supabase login` so it can be fetched.')
 }
 
-function restDeps(baseUrl, key, shared) {
+export function restDeps(baseUrl, key, shared, fetchFn = fetch) {
   const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }
   const call = async (path, init = {}) => {
-    const res = await fetch(`${baseUrl}/rest/v1/${path}`, { ...init, headers: { ...headers, ...init.headers } })
-    if (!res.ok) throw new Error(`Supabase ${res.status}: ${(await res.text()).slice(0, 200)}`)
-    return res.status === 204 ? null : res.json()
+    const res = await fetchFn(`${baseUrl}/rest/v1/${path}`, { ...init, headers: { ...headers, ...init.headers } })
+    const body = await res.text()
+    if (!res.ok) throw new Error(`Supabase ${res.status}: ${body.slice(0, 200)}`)
+    // `Prefer: return=minimal` answers 201/204 with an EMPTY body; parsing that
+    // as JSON used to throw "Unexpected end of JSON input" AFTER the row was written.
+    return body ? JSON.parse(body) : null
   }
   return {
     now: () => new Date(),
