@@ -223,6 +223,10 @@ const strings = {
     checkoutStarting: "Binubuksan…",
     checkoutSuccess: "Salamat! Ipapadala ang license key sa email mo. Pagdating, ilagay sa Sistema → May key na?",
     checkoutCancel: "Hindi natuloy ang bayad. Pwede mo ulit subukan anumang oras.",
+    premiumLockedTitle: 'Para sa Premium ang ulat ng buong taon',
+    premiumLockedBody: 'Libre ang Ngayon at Linggo. Ang buong taon at CSV export ay para sa Premium. Nasa device mo pa rin ang lahat ng benta.',
+    premiumCsvLocked: 'Premium ang CSV export. Tingnan sa Setting → Sistema.',
+    goPremium: 'Tingnan ang Premium',
     // Stock / errors
     stockLimit: '{n} na lang ang stock',
     saleError: 'Hindi na-save ang benta. Subukan ulit.',
@@ -451,6 +455,10 @@ const strings = {
     checkoutStarting: "Opening…",
     checkoutSuccess: "Thanks! Your license key is being emailed. When it arrives, enter it under System → Already paid?",
     checkoutCancel: "Payment wasn't completed. You can try again any time.",
+    premiumLockedTitle: 'The year-to-date report is Premium',
+    premiumLockedBody: 'Today and This Week are free. The full-year report and CSV export are Premium. All your sales stay on this device.',
+    premiumCsvLocked: 'CSV export is Premium. See Settings → System.',
+    goPremium: 'See Premium',
     // Stock / errors
     stockLimit: 'Only {n} left in stock',
     saleError: "Couldn't save the sale. Please try again.",
