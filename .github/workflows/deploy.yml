@@ -33,11 +33,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Never publish a build whose tests fail.
+      - name: Test
+        run: npm test
+
+      # The Supabase project URL and PUBLIC anon key are committed in
+      # src/lib/supabase.js and are the single source of truth. Do NOT pass
+      # VITE_SUPABASE_* here: stale repository secrets (e.g. from a deleted
+      # project) would silently override them and point the live site at a dead
+      # backend.
       - name: Build
         run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
