@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, it, expect } from 'vitest'
 import {
-  getDB, recordSale, voidSale, restock, saveItem,
+  getDB, recordSale, voidSale, restock, saveItem, saveCategory, deleteCategory,
+  openShift, closeShift, getSetting, setSetting, exportAllData, importAllData,
   syncIdentity, hasUnsynced, markSyncedByIdentity,
 } from './db'
 
@@ -14,7 +15,10 @@ async function clearAll() {
   await tx.done
 }
 
-beforeEach(clearAll)
+beforeEach(async () => {
+  localStorage.clear()
+  await clearAll()
+})
 
 describe('recordSale', () => {
   it('stamps a uuid and synced:false', async () => {
@@ -96,5 +100,77 @@ describe('markSyncedByIdentity', () => {
     const db = await getDB()
     expect((await db.get('sales', a.id)).synced).toBe(true)
     expect((await db.get('sales', b.id)).synced).toBe(false)
+  })
+})
+
+describe('deleteCategory', () => {
+  it('unlinks items that pointed at the deleted category', async () => {
+    const catId = await saveCategory({ name: 'Drinks', emoji: '🥤' })
+    const other = await saveCategory({ name: 'Food', emoji: '🍱' })
+    const a = await saveItem({ name: 'A', price: 1, categoryId: catId })
+    const b = await saveItem({ name: 'B', price: 1, categoryId: other })
+    await deleteCategory(catId)
+    const db = await getDB()
+    expect((await db.get('items', a)).categoryId).toBeNull()
+    expect((await db.get('items', b)).categoryId).toBe(other)
+  })
+})
+
+describe('closeShift', () => {
+  it('excludes voided sales from totals and expected cash', async () => {
+    await openShift(100)
+    const sales = [
+      { total: 50, method: 'cash' },
+      { total: 30, method: 'gcash' },
+      { total: 999, method: 'cash', status: 'voided' },
+    ]
+    const rec = await closeShift(sales)
+    expect(rec.cashSales).toBe(50)
+    expect(rec.gcashSales).toBe(30)
+    expect(rec.totalSales).toBe(80)
+    expect(rec.expectedCash).toBe(150)
+    expect(rec.transactionCount).toBe(2)
+    expect(rec.voidedCount).toBe(1)
+  })
+})
+
+describe('backup export/import', () => {
+  it('round-trips localStorage-backed settings (name, language, theme)', async () => {
+    localStorage.setItem('businessName', 'Aling Nena')
+    localStorage.setItem('lang', 'eng')
+    localStorage.setItem('theme', 'dark')
+    await setSetting('logo', 'data:image/png;base64,AAAA')
+    const backup = await exportAllData()
+    expect(backup.settings).toMatchObject({
+      businessName: 'Aling Nena', lang: 'eng', theme: 'dark', logo: 'data:image/png;base64,AAAA',
+    })
+
+    localStorage.clear()
+    await clearAll()
+    await importAllData(backup)
+    expect(localStorage.getItem('businessName')).toBe('Aling Nena')
+    expect(localStorage.getItem('lang')).toBe('eng')
+    expect(localStorage.getItem('theme')).toBe('dark')
+    expect(await getSetting('logo')).toBe('data:image/png;base64,AAAA')
+  })
+
+  it('ignores unknown or malformed setting values on import', async () => {
+    await importAllData({
+      version: 1,
+      settings: {
+        currentShift: { openedAt: 'x' },
+        defaultDataSeeded: false,
+        lang: 'klingon',
+        theme: 'neon',
+        gcashQR: 'javascript:alert(1)',
+        businessName: 'Ok Store',
+      },
+    })
+    expect(await getSetting('currentShift')).toBeUndefined()
+    expect(await getSetting('defaultDataSeeded')).toBeUndefined()
+    expect(await getSetting('gcashQR')).toBeUndefined()
+    expect(localStorage.getItem('lang')).toBeNull()
+    expect(localStorage.getItem('theme')).toBeNull()
+    expect(localStorage.getItem('businessName')).toBe('Ok Store')
   })
 })
