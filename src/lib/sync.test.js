@@ -24,6 +24,15 @@ function pullResult(stores) {
   }
 }
 
+// A license the server confirmed recently and that has not expired.
+function seedLicense(over = {}) {
+  localStorage.setItem('licenseKey', 'k')
+  localStorage.setItem('licenseCache', JSON.stringify({
+    key: 'k', plan: 'monthly', cachedAt: Date.now(),
+    expires_at: new Date(Date.now() + 86400_000).toISOString(), ...over,
+  }))
+}
+
 beforeEach(async () => {
   await clearAll()
   invoke.mockReset()
@@ -102,13 +111,20 @@ describe('autoSync — gating', () => {
   })
 
   it('no-ops when nothing is unsynced', async () => {
-    localStorage.setItem('licenseKey', 'k')
+    seedLicense()
+    expect(await autoSync()).toBe(false)
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it('no-ops when the license has expired', async () => {
+    seedLicense({ expires_at: new Date(Date.now() - 1000).toISOString() })
+    await recordSale({ total: 1, method: 'cash', lines: [] })
     expect(await autoSync()).toBe(false)
     expect(invoke).not.toHaveBeenCalled()
   })
 
   it('pushes when online, licensed, and unsynced', async () => {
-    localStorage.setItem('licenseKey', 'k')
+    seedLicense()
     await recordSale({ total: 1, method: 'cash', lines: [] })
     invoke.mockResolvedValue({ data: { results: {}, syncedAt: 't' }, error: null })
 
@@ -117,7 +133,7 @@ describe('autoSync — gating', () => {
   })
 
   it('never throws when the push fails', async () => {
-    localStorage.setItem('licenseKey', 'k')
+    seedLicense()
     await recordSale({ total: 1, method: 'cash', lines: [] })
     invoke.mockRejectedValue(new Error('net down'))
 

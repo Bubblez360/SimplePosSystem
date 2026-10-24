@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { t } from '../i18n'
+import { getCachedLicense } from '../lib/licenseCache'
 
 const EMPTY_DISCOUNT = { type: 'flat', value: '' }
 const TOAST_MS = 2400
@@ -136,7 +137,8 @@ export const useStore = create(persist((set, get) => ({
   setLogo: (logo) => set({ logo }),
 
   // Premium / license
-  isPremium: false,
+  // Derived from the cached license's own expiry; kept fresh by initLicenseRefresh().
+  isPremium: !!getCachedLicense(),
   setIsPremium: (v) => set({ isPremium: v }),
   licenseKey: localStorage.getItem('licenseKey') || '',
   setLicenseKey: (key) => {

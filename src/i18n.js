@@ -202,6 +202,10 @@ const strings = {
     licenseKeyLabel: "License key",
     storageError: "Hindi ma-access ang storage ng device. Maaaring hindi ma-save ang mga benta.",
     ledger: "Buod ng araw",
+    keySentToEmail: "Kung may license ang email na iyon, ipinadala na ang key. Tingnan ang inbox (at spam).",
+    emailMeKey: "Ipadala sa email",
+    validUntil: "Valid hanggang {date}",
+    serverUnreachable: "Hindi maabot ang server. Tingnan ang internet at subukan ulit.",
     // Stock / errors
     stockLimit: '{n} na lang ang stock',
     saleError: 'Hindi na-save ang benta. Subukan ulit.',
@@ -409,6 +413,10 @@ const strings = {
     licenseKeyLabel: "License key",
     storageError: "Can't access device storage. Sales may not be saved.",
     ledger: "Summary",
+    keySentToEmail: "If that email has a license, we sent the key. Check your inbox (and spam).",
+    emailMeKey: "Email me the key",
+    validUntil: "Valid until {date}",
+    serverUnreachable: "Can't reach the server. Check your internet and try again.",
     // Stock / errors
     stockLimit: 'Only {n} left in stock',
     saleError: "Couldn't save the sale. Please try again.",
