@@ -19,7 +19,7 @@ const MAX_EMAIL_LENGTH = 254
 export interface RetrieveDeps {
   admin: Admin
   sendEmail: (o: { to: string; licenseKey: string; plan: string; expiresAt: Date }) => Promise<boolean>
-  /** False when RESEND_API_KEY is missing: we refuse instead of silently dropping the email. */
+  /** False when no email provider is configured: we refuse instead of silently dropping the email. */
   emailConfigured: boolean
 }
 
@@ -48,7 +48,7 @@ export function createRetrieveHandler({ admin, sendEmail, emailConfigured }: Ret
     }
 
     if (!emailConfigured) {
-      console.error('RESEND_API_KEY is not set — cannot deliver license keys')
+      console.error('No email provider configured (GMAIL_USER/GMAIL_APP_PASSWORD or RESEND_API_KEY) — cannot deliver license keys')
       return json({ error: 'Email delivery is unavailable right now. Please try again later.' }, 503)
     }
 
