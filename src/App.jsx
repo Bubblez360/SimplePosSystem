@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { useStore } from './store/useStore'
 import { getAllItems, getAllCategories, getSetting, seedDefaultData } from './db/db'
 import { initAutoSync } from './lib/sync'
+import { initLicenseRefresh } from './lib/license'
 import { t } from './i18n'
 import BottomNav from './components/BottomNav'
 import CartBar from './components/cart/CartBar'
@@ -37,6 +38,8 @@ export default function App() {
   const setCategories = useStore(s => s.setCategories)
   const setGcashQR = useStore(s => s.setGcashQR)
   const setLogo = useStore(s => s.setLogo)
+  const setIsPremium = useStore(s => s.setIsPremium)
+  const setLicenseKey = useStore(s => s.setLicenseKey)
   const checkoutOpen = useStore(s => s.checkoutOpen)
   const gcashOpen = useStore(s => s.gcashOpen)
   const variantPickerItem = useStore(s => s.variantPickerItem)
@@ -65,6 +68,14 @@ export default function App() {
 
   // Auto-sync unsynced sales to the cloud when online / refocused / periodically.
   useEffect(() => initAutoSync(), [])
+
+  // Keep Premium correct without opening Settings: re-check the license when
+  // it is stale (startup, back online, app refocused). Transient failures never
+  // downgrade; only a definitive "invalid" from the server does.
+  useEffect(() => initLicenseRefresh(({ premium, license }) => {
+    setIsPremium(premium)
+    if (license?.key) setLicenseKey(license.key)
+  }), [setIsPremium, setLicenseKey])
 
   function handleCloseOnboarding() {
     localStorage.setItem('hasSeenGuide', '1')

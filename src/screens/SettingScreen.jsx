@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { getSetting, getAllCategories } from '../db/db'
-import { getCachedLicense } from '../lib/license'
 import { t } from '../i18n'
 import StoreTab from '../components/settings/StoreTab'
 import SystemTab from '../components/settings/SystemTab'
@@ -10,20 +9,13 @@ export default function SettingScreen() {
   const lang = useStore(s => s.lang)
   const setGcashQR = useStore(s => s.setGcashQR)
   const setCategories = useStore(s => s.setCategories)
-  const setIsPremium = useStore(s => s.setIsPremium)
-  const setLicenseKey = useStore(s => s.setLicenseKey)
   const [tab, setTab] = useState('store')
   const isFil = lang === 'fil'
 
   useEffect(() => {
     getSetting('gcashQR').then(qr => { if (qr) setGcashQR(qr) })
     getAllCategories().then(setCategories)
-    const cached = getCachedLicense()
-    if (cached) {
-      setIsPremium(true)
-      if (cached.key) setLicenseKey(cached.key)
-    }
-  }, [setGcashQR, setCategories, setIsPremium, setLicenseKey])
+  }, [setGcashQR, setCategories])
 
   const tabs = [['store', isFil ? 'Tindahan' : 'Store'], ['system', isFil ? 'Sistema' : 'System']]
 
