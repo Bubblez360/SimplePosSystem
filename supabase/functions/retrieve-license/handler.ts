@@ -52,6 +52,7 @@ export function createRetrieveHandler({ admin, sendEmail, emailConfigured }: Ret
       return json({ error: 'Email delivery is unavailable right now. Please try again later.' }, 503)
     }
 
+    const attemptStartedAt = new Date().toISOString()
     const emailAllowed = await checkRateLimit(admin, `email:${email}`, 'retrieve', 3, 60)
     const ipAllowed = emailAllowed && await checkRateLimit(admin, `ip:${ip}`, 'retrieve', 5, 60)
     if (!emailAllowed || !ipAllowed) {
@@ -75,7 +76,14 @@ export function createRetrieveHandler({ admin, sendEmail, emailConfigured }: Ret
         plan: data.plan ?? 'monthly',
         expiresAt: data.expires_at ? new Date(data.expires_at) : new Date(8640000000000000),
       })
-      if (!sent) return json({ error: 'Could not send the email. Please try again later.' }, 502)
+      if (!sent) {
+        // A failed send is our fault, not abuse: don't let it use up the customer's tries.
+        await admin.from('rate_limits').delete()
+          .in('identifier', [`email:${email}`, `ip:${ip}`])
+          .eq('action', 'retrieve')
+          .gte('created_at', attemptStartedAt)
+        return json({ error: 'Could not send the email. Please try again later.' }, 502)
+      }
     }
 
     // Same answer for "sent", "no such license" and "expired".
