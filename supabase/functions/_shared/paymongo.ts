@@ -5,7 +5,10 @@ const KEY_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 export type Plan = 'trial' | 'monthly' | 'annual'
 
-// Price points in centavos: ₱49 trial, ₱99 monthly, ₱499 annual.
+// Price points in centavos: ₱49 trial, ₱99 monthly, ₱499 annual. The checkout
+// function charges these; the webhook maps what was paid back to a plan.
+export const PLAN_PRICES: Record<Plan, number> = { trial: 4900, monthly: 9900, annual: 49900 }
+
 // Anything below the cheapest plan is not a subscription payment.
 export function planForAmount(amount: unknown): { plan: Plan; days: number } | null {
   if (typeof amount !== 'number' || !Number.isFinite(amount)) return null
@@ -69,4 +72,39 @@ export async function verifyPaymongoSignature(
 
   // Evaluate every candidate (no short-circuit) before deciding.
   return candidates.map(c => timingSafeEqualHex(c, computed)).some(Boolean)
+}
+
+export interface PaidPayment { paymentId: string; email: string; amount: number }
+
+const cleanEmail = (v: unknown) => (typeof v === 'string' ? v.toLowerCase().trim() : '')
+
+// Pulls "who paid, how much, which payment" out of a PayMongo webhook event.
+// Handles both event shapes: `payment.paid` (the payment itself) and
+// `checkout_session.payment.paid` (the checkout session, with its payments[]).
+// Returns null for any other event type; empty paymentId/email when missing.
+// deno-lint-ignore no-explicit-any
+export function extractPaid(attrs: any): PaidPayment | null {
+  const type = attrs?.type
+  const resource = attrs?.data
+  if (type === 'payment.paid') {
+    const a = resource?.attributes
+    return {
+      paymentId: String(resource?.id ?? ''),
+      email: cleanEmail(a?.billing?.email) || cleanEmail(a?.metadata?.email),
+      amount: Number(a?.amount),
+    }
+  }
+  if (type === 'checkout_session.payment.paid') {
+    const a = resource?.attributes
+    const payment = a?.payments?.[0]
+    const lineTotal = Array.isArray(a?.line_items)
+      ? a.line_items.reduce((sum: number, li: { amount?: number; quantity?: number }) => sum + Number(li.amount ?? 0) * Number(li.quantity ?? 1), 0)
+      : NaN
+    return {
+      paymentId: String(payment?.id ?? ''),
+      email: cleanEmail(a?.billing?.email) || cleanEmail(payment?.attributes?.billing?.email) || cleanEmail(a?.metadata?.email),
+      amount: Number(payment?.attributes?.amount ?? lineTotal),
+    }
+  }
+  return null
 }

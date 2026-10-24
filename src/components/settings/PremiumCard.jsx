@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { validateLicense, clearLicense, retrieveLicenseByEmail, getCachedLicense } from '../../lib/license'
+import { validateLicense, clearLicense, retrieveLicenseByEmail, getCachedLicense, createCheckout } from '../../lib/license'
 import { pushToCloud, pullFromCloud, noteSyncResult } from '../../lib/sync'
 import { t } from '../../i18n'
 import Icon from '../Icon'
 import SyncStatus from '../SyncStatus'
 
-const PAYMONGO_TRIAL_URL = 'https://pm.link/org-sYFHfsE6iaYeziwvXQQ4fiyP/FsgQoez'
-const PAYMONGO_MONTHLY_URL = 'https://pm.link/org-sYFHfsE6iaYeziwvXQQ4fiyP/egcstXO'
-const PAYMONGO_ANNUAL_URL = 'https://pm.link/org-sYFHfsE6iaYeziwvXQQ4fiyP/OkGvZss'
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const FEATURES = [
   ['cloud', 'Cloud backup'],
@@ -32,6 +30,22 @@ export default function PremiumCard() {
   const [loading, setLoading] = useState(null) // 'license' | 'email' | 'push' | 'pull'
   const [trialUsed, setTrialUsed] = useState(() => localStorage.getItem('tindapos_trial_used') === '1')
   const [showPaid, setShowPaid] = useState(false)
+  const [buyEmail, setBuyEmail] = useState(() => localStorage.getItem('buyEmail') || '')
+  const [buyEmailTouched, setBuyEmailTouched] = useState(false)
+  const buyEmailValid = EMAIL_PATTERN.test(buyEmail.trim())
+
+  // Opens PayMongo's hosted checkout with the buyer's email attached, so the
+  // payment can issue (and email) their license automatically.
+  async function buy(plan) {
+    setBuyEmailTouched(true)
+    if (!buyEmailValid) { document.getElementById('buy-email')?.focus(); return }
+    localStorage.setItem('buyEmail', buyEmail.trim())
+    setLoading(`buy-${plan}`)
+    const result = await createCheckout(buyEmail.trim(), plan)
+    if (result.url) { window.location.assign(result.url); return }
+    setLoading(null)
+    showToast(result.network ? t('serverUnreachable', lang) : result.error || t('saleError', lang), 'error')
+  }
 
   async function activate(e) {
     e.preventDefault()
@@ -149,23 +163,42 @@ export default function PremiumCard() {
             ))}
           </ul>
 
+          <div>
+            <label htmlFor="buy-email" className="field-label">{t('buyEmailLabel', lang)}</label>
+            <input
+              id="buy-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={buyEmail}
+              onChange={e => setBuyEmail(e.target.value)}
+              placeholder="name@email.com"
+              aria-invalid={buyEmailTouched && !buyEmailValid}
+              aria-describedby="buy-email-hint"
+              className="field"
+            />
+            <p id="buy-email-hint" className={`mt-1.5 text-[13px] ${buyEmailTouched && !buyEmailValid ? 'font-bold text-error' : 'text-muted'}`}>
+              {buyEmailTouched && !buyEmailValid ? t('enterValidEmail', lang) : t('buyEmailHint', lang)}
+            </p>
+          </div>
+
           {!trialUsed && (
-            <a href={PAYMONGO_TRIAL_URL} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full !border-amber !bg-amber-light !text-amber-ink">
+            <button type="button" onClick={() => buy('trial')} disabled={!!loading} className="btn-secondary w-full !border-amber !bg-amber-light !text-amber-ink">
               <Icon name="sparkle" size={18} />
-              {isFil ? 'Subukan — ₱49 / 7 araw' : 'Try it — ₱49 / 7 days'}
-            </a>
+              {loading === 'buy-trial' ? t('checkoutStarting', lang) : isFil ? 'Subukan — ₱49 / 7 araw' : 'Try it — ₱49 / 7 days'}
+            </button>
           )}
 
           <div className="grid grid-cols-2 gap-2.5">
-            <a href={PAYMONGO_MONTHLY_URL} target="_blank" rel="noopener noreferrer" className="btn-secondary !flex-col !gap-1 min-h-[68px]">
+            <button type="button" onClick={() => buy('monthly')} disabled={!!loading} className="btn-secondary !flex-col !gap-1 min-h-[68px]">
               <span className="font-mono text-[20px] font-medium">₱99</span>
-              <span className="text-[12px] font-bold text-muted">{isFil ? 'bawat buwan' : 'per month'}</span>
-            </a>
-            <a href={PAYMONGO_ANNUAL_URL} target="_blank" rel="noopener noreferrer" className="btn-primary !flex-col !gap-1 min-h-[68px] relative">
+              <span className="text-[12px] font-bold text-muted">{loading === 'buy-monthly' ? t('checkoutStarting', lang) : isFil ? 'bawat buwan' : 'per month'}</span>
+            </button>
+            <button type="button" onClick={() => buy('annual')} disabled={!!loading} className="btn-primary !flex-col !gap-1 min-h-[68px] relative">
               <span className="font-mono text-[20px] font-medium">₱499</span>
-              <span className="text-[12px] font-bold">{isFil ? 'bawat taon' : 'per year'}</span>
+              <span className="text-[12px] font-bold">{loading === 'buy-annual' ? t('checkoutStarting', lang) : isFil ? 'bawat taon' : 'per year'}</span>
               <span className="absolute -top-2 right-2 pill-badge bg-text text-surface">{isFil ? 'Mas mura' : 'Best value'}</span>
-            </a>
+            </button>
           </div>
           <p className="text-[12px] text-muted text-center">{isFil ? 'Makatipid ng ₱689 sa taunan vs buwanan' : 'Save ₱689/yr with annual vs monthly'}</p>
 

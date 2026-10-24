@@ -66,6 +66,20 @@ export default function App() {
     document.documentElement.lang = lang === 'eng' ? 'en' : 'fil'
   }, [lang])
 
+  // Back from PayMongo's hosted checkout (?checkout=success|cancel): say what
+  // happens next, then tidy the address bar.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('checkout')
+    if (!result) return
+    useStore.getState().setScreen('setting')
+    showToast(t(result === 'success' ? 'checkoutSuccess' : 'checkoutCancel', lang), result === 'success' ? 'info' : 'warn')
+    params.delete('checkout')
+    const query = params.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, [])
+
   // Auto-sync unsynced sales to the cloud when online / refocused / periodically.
   useEffect(() => initAutoSync(), [])
 
