@@ -1,9 +1,26 @@
-// License-key email via Resend. Shared by the payment webhook (new purchase)
-// and retrieve-license ("I lost my key"), which now EMAILS the key instead of
-// returning it to whoever typed the address.
+// License-key email. Shared by the payment webhook (new purchase) and
+// retrieve-license ("I lost my key"), which EMAILS the key instead of returning
+// it to whoever typed the address.
+//
+// Delivery is pluggable: pass a `transport` (Gmail SMTP, see smtp.ts) or an
+// `apiKey` (Resend). This file stays free of Deno-only imports so Node (vitest,
+// scripts/issue-license.mjs) can load it.
+
+export interface MailMessage {
+  from: string
+  to: string
+  subject: string
+  html: string
+  text: string
+}
+
+/** Resolves true only when the provider accepted the message. May throw. */
+export type MailTransport = (msg: MailMessage) => Promise<boolean>
 
 export interface LicenseEmail {
-  apiKey: string
+  /** Resend API key. Ignored when `transport` is set. */
+  apiKey?: string
+  transport?: MailTransport
   from: string
   to: string
   licenseKey: string
@@ -69,35 +86,51 @@ export function renderLicenseEmail(o: Pick<LicenseEmail, 'licenseKey' | 'plan' |
 </body>
 </html>`
 
-  return { planLabel, html }
+  const text = [
+    intro,
+    '',
+    `License key: ${o.licenseKey}`,
+    `Plan: ${planLabel}`,
+    `Valid hanggang: ${expiryStr}`,
+    '',
+    'Paano i-activate: Setting > Sistema > "May key na?" > i-paste ang key > I-activate ang Key.',
+    '',
+    outro,
+  ].join('\n')
+
+  return { planLabel, html, text }
 }
 
-// Returns true only when Resend accepted the message.
-export async function sendLicenseEmail(o: LicenseEmail): Promise<boolean> {
-  if (!o.apiKey) {
-    console.error('RESEND_API_KEY not set — cannot send license email')
-    return false
-  }
-  const { planLabel, html } = renderLicenseEmail(o)
-  const send = o.fetchFn ?? fetch
-  try {
+function resendTransport(apiKey: string, send: typeof fetch): MailTransport {
+  return async ({ from, to, subject, html }) => {
     const res = await send('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${o.apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: o.from,
-        to: [o.to],
-        subject: `Ang iyong TindaPOS License Key — ${planLabel}`,
-        html,
-      }),
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: [to], subject, html }),
     })
-    if (!res.ok) {
-      console.error('Resend error:', res.status, await res.text())
-      return false
-    }
-    return true
+    if (!res.ok) console.error('Resend error:', res.status, await res.text())
+    return res.ok
+  }
+}
+
+// Returns true only when the provider accepted the message. Never throws.
+export async function sendLicenseEmail(o: LicenseEmail): Promise<boolean> {
+  const transport = o.transport ?? (o.apiKey ? resendTransport(o.apiKey, o.fetchFn ?? fetch) : null)
+  if (!transport) {
+    console.error('No email transport configured (set GMAIL_USER + GMAIL_APP_PASSWORD, or RESEND_API_KEY)')
+    return false
+  }
+  const { planLabel, html, text } = renderLicenseEmail(o)
+  try {
+    return await transport({
+      from: o.from,
+      to: o.to,
+      subject: `Ang iyong TindaPOS License Key — ${planLabel}`,
+      html,
+      text,
+    })
   } catch (err) {
-    console.error('Resend request failed:', err)
+    console.error('Email send failed:', err)
     return false
   }
 }
