@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getDB, syncIdentity, markSyncedByIdentity, hasUnsynced } from '../db/db'
+import { getCachedLicense } from './licenseCache'
 
 const STORES = ['items', 'categories', 'sales', 'expenses']
 // Money data is append-only and irreplaceable: merge on pull, never wipe.
@@ -120,7 +121,9 @@ export function getLastSyncTime(_licenseKey) {
 // always secondary to the local-first write that already succeeded.
 export async function autoSync() {
   const licenseKey = localStorage.getItem('licenseKey')
-  if (!licenseKey || !supabase || !navigator.onLine) return false
+  // An expired or rejected license can't sync; don't hammer the server (and
+  // flag a sync error every minute) until the vendor renews.
+  if (!licenseKey || !supabase || !navigator.onLine || !getCachedLicense()) return false
   try {
     if (!(await hasUnsynced())) return false
     await pushToCloud(licenseKey)
