@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { validateLicense, clearLicense, retrieveLicenseByEmail } from '../../lib/license'
+import { validateLicense, clearLicense, retrieveLicenseByEmail, getCachedLicense } from '../../lib/license'
 import { pushToCloud, pullFromCloud, noteSyncResult } from '../../lib/sync'
 import { t } from '../../i18n'
 import Icon from '../Icon'
@@ -25,6 +25,7 @@ export default function PremiumCard() {
   const setLicenseKey = useStore(s => s.setLicenseKey)
   const showToast = useStore(s => s.showToast)
   const isFil = lang === 'fil'
+  const license = isPremium ? getCachedLicense() : null
 
   const [licenseInput, setLicenseInput] = useState(licenseKey)
   const [emailInput, setEmailInput] = useState('')
@@ -40,7 +41,7 @@ export default function PremiumCard() {
     const result = await validateLicense(key)
     setLoading(null)
     if (!result.valid) {
-      showToast(result.error || (isFil ? 'Invalid na license key' : 'Invalid license key'), 'error')
+      showToast(result.network ? t('serverUnreachable', lang) : result.error || (isFil ? 'Invalid na license key' : 'Invalid license key'), 'error')
       return
     }
     setLicenseKey(key)
@@ -58,12 +59,10 @@ export default function PremiumCard() {
     setLoading('email')
     const result = await retrieveLicenseByEmail(emailInput.trim())
     setLoading(null)
-    if (result.key) {
-      setLicenseInput(result.key)
-      showToast(isFil ? 'Key na-retrieve! I-activate na.' : 'Key retrieved! Now activate it.')
-    } else {
-      showToast(result.error || (isFil ? 'Walang license para sa email na iyon' : 'No license found for that email'), 'error')
-    }
+    // The server only emails the key (it never reveals whether the address has a
+    // license), so the answer is the same either way: check your inbox.
+    if (result.sent) showToast(t('keySentToEmail', lang))
+    else showToast(result.network ? t('serverUnreachable', lang) : result.error || t('saleError', lang), 'error')
   }
 
   function removeLicense() {
@@ -122,6 +121,11 @@ export default function PremiumCard() {
           <div className="rounded-xl bg-amber-light border border-amber/40 px-4 py-3">
             <p className="flex items-center gap-2 text-[14px] font-extrabold text-amber-ink"><Icon name="cloud" size={18} />Cloud Sync</p>
             <SyncStatus lang={lang} />
+            {license?.expires_at && (
+              <p className="mt-1.5 text-[13px] font-semibold text-muted">
+                {t('validUntil', lang).replace('{date}', new Date(license.expires_at).toLocaleDateString(isFil ? 'fil-PH' : 'en-PH', { year: 'numeric', month: 'long', day: 'numeric' }))}
+              </p>
+            )}
           </div>
           <button type="button" onClick={push} disabled={!!loading} className="btn-primary w-full">
             <Icon name="cloud" size={18} />
@@ -179,7 +183,7 @@ export default function PremiumCard() {
             <div className="flex flex-col gap-3 pt-3 border-t border-border">
               <form onSubmit={retrieveKey}>
                 <label htmlFor="paid-email" className="field-label">{t('emailPaid', lang)}</label>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
                   <input
                     id="paid-email"
                     type="email"
@@ -190,8 +194,8 @@ export default function PremiumCard() {
                     placeholder="name@email.com"
                     className="field flex-1 min-w-0"
                   />
-                  <button type="submit" disabled={loading === 'email' || !emailInput.trim()} className="btn-secondary px-4">
-                    {loading === 'email' ? '…' : isFil ? 'Kuhanin' : 'Get key'}
+                  <button type="submit" disabled={loading === 'email' || !emailInput.trim()} className="btn-secondary w-full">
+                    {loading === 'email' ? '…' : t('emailMeKey', lang)}
                   </button>
                 </div>
               </form>
