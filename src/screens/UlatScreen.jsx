@@ -7,6 +7,7 @@ import {
 } from '../db/db'
 import { computeReport } from '../lib/report'
 import { downloadCsv } from '../utils/exportCsv'
+import { isPeriodLocked, canExportCsv } from '../lib/premium'
 import { t } from '../i18n'
 import Icon from '../components/Icon'
 import { BarChart, RankedRows } from '../components/ulat/Charts'
@@ -57,6 +58,9 @@ export default function UlatScreen() {
   const items = useStore(s => s.items)
   const categories = useStore(s => s.categories)
   const businessName = useStore(s => s.businessName)
+  const isPremium = useStore(s => s.isPremium)
+  const setScreen = useStore(s => s.setScreen)
+  const showToast = useStore(s => s.showToast)
   const setItems = useStore(s => s.setItems)
   const [period, setPeriod] = useState('today')
   const [view, setView] = useState('analytics')
@@ -93,6 +97,16 @@ export default function UlatScreen() {
     [sales, expenses, items, categories, period, lang],
   )
 
+  const locked = isPeriodLocked(period, isPremium)
+
+  function handleCsv() {
+    if (!canExportCsv(isPremium)) {
+      showToast(t('premiumCsvLocked', lang), 'warn')
+      return
+    }
+    downloadCsv({ sales: r.active, expenses, lang, period, businessName })
+  }
+
   const periodLabels = [['today', t('periodToday', lang)], ['week', t('periodWeek', lang)], ['month', t('periodMonth', lang)]]
   const heroLabel = period === 'today' ? t('todaySales', lang) : period === 'week' ? t('weeklySales', lang) : t('monthlySales', lang)
   const chartTitle = period === 'today' ? t('salesByHour', lang) : period === 'week' ? t('salesByDay', lang) : t('monthlyTrend', lang)
@@ -107,13 +121,9 @@ export default function UlatScreen() {
       <header className="sticky top-0 z-10 bg-bg/90 backdrop-blur border-b border-border px-4 pt-3 pb-3 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[22px] font-extrabold tracking-tight">{t('ulat', lang)}</h1>
-          {r.active.length > 0 && (
-            <button
-              type="button"
-              className="btn-secondary btn-sm"
-              onClick={() => downloadCsv({ sales: r.active, expenses, lang, period, businessName })}
-            >
-              <Icon name="download" size={16} />
+          {r.active.length > 0 && !locked && (
+            <button type="button" className="btn-secondary btn-sm" onClick={handleCsv}>
+              <Icon name={isPremium ? 'download' : 'lock'} size={16} />
               CSV
             </button>
           )}
@@ -131,7 +141,18 @@ export default function UlatScreen() {
       </header>
 
       <div className="flex flex-col gap-3 p-4">
-        {view === 'analytics' && (
+        {locked && (
+          <section className="card p-6 text-center" aria-label={t('premiumLockedTitle', lang)}>
+            <span className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-amber-bg text-amber-ink flex items-center justify-center"><Icon name="lock" size={26} /></span>
+            <h2 className="text-[17px] font-extrabold">{t('premiumLockedTitle', lang)}</h2>
+            <p className="mt-2 text-[14px] text-muted">{t('premiumLockedBody', lang)}</p>
+            <button type="button" className="btn-primary mt-4 w-full" onClick={() => setScreen('setting')}>
+              <Icon name="star" size={18} />{t('goPremium', lang)}
+            </button>
+          </section>
+        )}
+
+        {!locked && view === 'analytics' && (
           <>
             {/* Hero: the one number a vendor checks all day */}
             <section className="rounded-card bg-amber text-on-amber p-5 shadow-card" aria-label={heroLabel}>
@@ -205,7 +226,7 @@ export default function UlatScreen() {
           </>
         )}
 
-        {view === 'transactions' && (
+        {!locked && view === 'transactions' && (
           sales.length === 0 ? (
             <div className="py-16 text-center card border-dashed shadow-none">
               <span className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-surface-2 text-faint flex items-center justify-center"><Icon name="receipt" size={26} /></span>
