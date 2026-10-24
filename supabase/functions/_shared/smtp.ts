@@ -25,7 +25,9 @@ export function createGmailTransport(user: string, appPassword: string): MailTra
       await client.send({ from, to, subject, content: text, html })
       return true
     } finally {
-      await client.close().catch(() => {})
+      // denomailer 1.6.0's close() returns nothing (not a Promise), so `.catch`
+      // threw here AFTER a successful send and made a delivered email report failure.
+      try { await client.close() } catch { /* already closed */ }
     }
   }
 }
