@@ -1,4 +1,4 @@
-import { generateLicenseKey, planForAmount, verifyPaymongoSignature } from '../_shared/paymongo.ts'
+import { extractPaid, generateLicenseKey, planForAmount, verifyPaymongoSignature } from '../_shared/paymongo.ts'
 
 // Structural subset of the Supabase client this handler needs, so tests can
 // pass a tiny fake.
@@ -43,13 +43,11 @@ export function createWebhookHandler({ secret, supabase, sendEmail, now = () => 
       return text('Invalid JSON', 400)
     }
 
-    const attrs = event?.data?.attributes
-    if (attrs?.type !== 'payment.paid') return text('OK', 200)
-
-    const payment = attrs.data
-    const paymentId: string | undefined = payment?.id
-    const email: string | undefined = payment?.attributes?.billing?.email?.toLowerCase().trim()
-    const amount = payment?.attributes?.amount
+    // payment.paid (a payment) and checkout_session.payment.paid (an in-app
+    // checkout) both mean "money arrived"; anything else is acknowledged and ignored.
+    const paid = extractPaid(event?.data?.attributes)
+    if (!paid) return text('OK', 200)
+    const { paymentId, email, amount } = paid
 
     if (!paymentId || !email) return text('Missing billing email', 400)
 

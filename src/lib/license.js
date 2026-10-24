@@ -128,3 +128,28 @@ export async function retrieveLicenseByEmail(email) {
   if (data?.sent !== true) return { sent: false, error: data?.error ?? 'Could not send the key' }
   return { sent: true }
 }
+
+// Starts a PayMongo checkout for `plan` with the buyer's email attached (so the
+// payment event can issue the license). The price and the PayMongo secret key
+// live on the server; the app only sends an email and a plan name.
+export async function createCheckout(email, plan) {
+  const mail = email?.trim()
+  if (!mail || !supabase) return { url: null, error: 'Invalid email' }
+
+  let data, error
+  try {
+    ({ data, error } = await supabase.functions.invoke('create-checkout', { body: { email: mail, plan } }))
+  } catch (err) {
+    return { url: null, network: true, error: err?.message ?? 'Network error' }
+  }
+
+  if (error) {
+    const { message } = await readFunctionError(error)
+    return { url: null, network: isNetworkFailure(error), error: message ?? 'Request failed' }
+  }
+  const url = data?.checkout_url
+  if (typeof url !== 'string' || !url.startsWith('https://')) {
+    return { url: null, error: data?.error ?? 'Could not start the payment' }
+  }
+  return { url }
+}

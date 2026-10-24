@@ -4,7 +4,7 @@ const invoke = vi.fn()
 vi.mock('./supabase', () => ({ supabase: { functions: { invoke: (...a) => invoke(...a) } } }))
 
 import {
-  getCachedLicense, needsRevalidation, refreshLicense, retrieveLicenseByEmail, validateLicense,
+  getCachedLicense, needsRevalidation, refreshLicense, retrieveLicenseByEmail, validateLicense, createCheckout,
   REVALIDATE_AFTER_MS, GRACE_MS,
 } from './license'
 
@@ -176,5 +176,28 @@ describe('retrieveLicenseByEmail', () => {
   it('rejects an empty email without calling the server', async () => {
     expect((await retrieveLicenseByEmail('  ')).sent).toBe(false)
     expect(invoke).not.toHaveBeenCalled()
+  })
+})
+
+describe('createCheckout', () => {
+  it('sends only the email and plan (never a price) and returns the https checkout url', async () => {
+    invoke.mockResolvedValue({ data: { checkout_url: 'https://checkout.paymongo.com/cs_1' }, error: null })
+    expect(await createCheckout(' nena@example.com ', 'monthly')).toEqual({ url: 'https://checkout.paymongo.com/cs_1' })
+    expect(invoke).toHaveBeenCalledWith('create-checkout', { body: { email: 'nena@example.com', plan: 'monthly' } })
+  })
+
+  it('refuses a non-https or missing url', async () => {
+    invoke.mockResolvedValue({ data: { checkout_url: 'javascript:alert(1)' }, error: null })
+    expect((await createCheckout('a@b.co', 'monthly')).url).toBeNull()
+    invoke.mockResolvedValue({ data: {}, error: null })
+    expect((await createCheckout('a@b.co', 'monthly')).url).toBeNull()
+  })
+
+  it('passes the server message through and flags network failures', async () => {
+    invoke.mockResolvedValue({ data: null, error: { message: 'non-2xx', context: { status: 409, json: async () => ({ error: 'This email already used the trial.' }) } } })
+    expect(await createCheckout('a@b.co', 'trial')).toMatchObject({ url: null, error: 'This email already used the trial.', network: false })
+    invoke.mockResolvedValue({ data: null, error: { name: 'FunctionsFetchError', message: 'x' } })
+    expect(await createCheckout('a@b.co', 'monthly')).toMatchObject({ network: true })
+    expect((await createCheckout('  ', 'monthly')).url).toBeNull()
   })
 })
