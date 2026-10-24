@@ -91,6 +91,15 @@ Every design decision serves this. It should feel Filipino, familiar, and like s
 }
 ```
 
+### Token changes in the Oct 2026 UI refresh
+Tokens now live in `src/index.css` as space-separated RGB channels (so Tailwind opacity modifiers work) and are exposed as Tailwind colors in `tailwind.config.js`. Brand hues are unchanged; contrast was fixed:
+- **`on-amber` (#1C1917) is the text/icon color on amber fills** — white on #F59E0B is 2.1:1, near-black is 8.1:1 and reads in direct sunlight.
+- **`amber-ink` (#B45309) is amber used as *text* on light surfaces** (5:1). Raw `amber` is for fills, rings and bars only.
+- **`green` is #15803D in light mode** (white-on-green 5:1); `on-green` / `on-error` flip per theme.
+- **`border-strong` for form-control edges** (>=3:1, WCAG 1.4.11); plain `border` stays for decorative dividers.
+- `faint` / `error` darkened so every text pair is >=4.5:1 in both themes (verified numerically, see decisions log).
+- Theme defaults to the OS preference when the vendor has not chosen one.
+
 ## Spacing
 - **Base unit:** 8px
 - **Min touch target:** 48px (outdoor use, thick fingers, one hand)
@@ -108,7 +117,7 @@ Every design decision serves this. It should feel Filipino, familiar, and like s
 
 ## Layout
 - **Approach:** Single-hand mobile-first
-- **Primary nav:** Bottom navigation bar (4 tabs: Benta / Menu / Ulat / Setting)
+- **Primary nav:** Bottom navigation bar (4 tabs: Benta / Menu / Ulat / Setting). From 1024px up it becomes a left rail and Benta shows the order as an always-visible right-hand cart panel (no one-hand constraint on a desktop/landscape tablet). Below that, the cart is a floating bar above the nav.
 - **Item catalog:** 2-column grid, large tiles (emoji/photo + name + price)
 - **Sticky bottom bar:** Running total (DM Mono) + "Bayad na" CTA — always visible, never scrolls away
 - **Breakpoints:** Mobile-only primary design. Tablet (≥768px) — 3-column item grid
@@ -203,3 +212,11 @@ Height: 72px · always above bottom nav
 | 2026-06-09 | Taglish-first with English toggle | "This was made for me" — but non-Tagalog speakers still supported |
 | 2026-06-09 | Custom item photos optional | Reduces friction; emoji fallback means zero-setup works day 1 |
 | 2026-06-09 | Bottom nav (4 tabs) | Thumb-reachable; standard Android pattern vendors already know |
+| 2026-10-24 | Near-black text on amber (`on-amber`) instead of white | White on amber fails WCAG (2.1:1); near-black is 8.1:1 and survives sunlight glare |
+| 2026-10-24 | SVG line icons replace emoji UI chrome (`Icon.jsx`) | Consistent weight/size, themeable, screen-reader friendly. Item/category emoji stay: that is vendor content |
+| 2026-10-24 | Sentence-case section titles; no tiny all-caps labels | Filipino words in tracked caps are hard to read outdoors and read as template scaffolding |
+| 2026-10-24 | Shared `Sheet` (portal, focus trap, Esc, `inert` background) for every modal | One accessible implementation instead of six hand-rolled overlays |
+| 2026-10-24 | Money fields are text + `inputMode="decimal"` with sanitizing, not `type=number` | `type=number` accepts "e"/"-" and changes value on scroll; a negative discount used to raise the total |
+| 2026-10-24 | Cart persisted in localStorage; payment method + discount live in the store | A refresh, Android process kill or SW update must not lose a sale in progress |
+| 2026-10-24 | Pinch-zoom re-enabled (removed `maximum-scale`/`user-scalable=no`) | WCAG 1.4.4; vendors with low vision need it |
+| 2026-10-24 | Plus Jakarta Sans + DM Mono kept despite the "overused font" detector warning | Brand decision recorded 2026-06-09; revisit only with the owner's approval |

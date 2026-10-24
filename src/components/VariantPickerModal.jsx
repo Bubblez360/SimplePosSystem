@@ -1,45 +1,49 @@
 import { useStore } from '../store/useStore'
 import { t } from '../i18n'
+import Sheet from './Sheet'
+import { peso } from './cart/useCart'
 
 export default function VariantPickerModal() {
-  const { variantPickerItem, setVariantPickerItem, addToCart, lang } = useStore()
-  const item = variantPickerItem
+  const item = useStore(s => s.variantPickerItem)
+  const setVariantPickerItem = useStore(s => s.setVariantPickerItem)
+  const addToCart = useStore(s => s.addToCart)
+  const lang = useStore(s => s.lang)
   if (!item) return null
 
   function pick(variantIdx) {
-    addToCart(`${item.id}_${variantIdx}`)
-    setVariantPickerItem(null)
+    // Only close when the line was actually added (stock cap may refuse).
+    if (addToCart(`${item.id}_${variantIdx}`)) setVariantPickerItem(null)
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/60" onClick={() => setVariantPickerItem(null)}>
-      <div className="mt-auto bg-bg rounded-t-[20px] overflow-hidden w-full max-w-2xl mx-auto" onClick={e => e.stopPropagation()}>
-        <div className="bg-surface px-4 py-4 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{item.photo
-              ? <img src={item.photo} alt={item.name} className="w-8 h-8 rounded-lg object-cover" />
-              : item.emoji || '🍱'}</span>
-            <div>
-              <p className="font-extrabold text-text">{item.name}</p>
-              <p className="text-xs text-muted">{t('chooseVariant', lang)}</p>
-            </div>
-          </div>
-          <button onClick={() => setVariantPickerItem(null)} className="w-10 h-10 -m-2 flex items-center justify-center text-muted text-2xl leading-none">×</button>
-        </div>
+  const thumb = (
+    <span className="w-12 h-12 rounded-xl bg-surface-2 flex items-center justify-center text-3xl overflow-hidden shrink-0">
+      {item.photo ? <img src={item.photo} alt="" className="w-full h-full object-cover" /> : item.emoji || '🍱'}
+    </span>
+  )
 
-        <div className="px-4 py-3 flex flex-col gap-2 sheet-pb">
-          {item.variants.map((v, idx) => (
+  return (
+    <Sheet
+      title={item.name}
+      subtitle={t('chooseVariant', lang)}
+      icon={thumb}
+      closeLabel={t('close', lang)}
+      onClose={() => setVariantPickerItem(null)}
+    >
+      <ul className="px-5 pb-5 pt-1 flex flex-col gap-2.5 sheet-pb">
+        {item.variants.map((v, idx) => (
+          <li key={idx}>
             <button
-              key={idx}
+              type="button"
               onClick={() => pick(idx)}
-              className="w-full flex items-center justify-between h-14 px-4 rounded-card border border-border bg-surface active:bg-amber-light active:border-amber transition-colors"
+              className="tile card w-full flex items-center justify-between min-h-[60px] px-4 text-left cursor-pointer
+                hover:border-amber active:bg-amber-light"
             >
-              <span className="font-semibold text-text">{v.name}</span>
-              <span className="font-mono font-medium text-amber-dark">₱{Number(v.price).toFixed(2)}</span>
+              <span className="text-[16px] font-bold text-text">{v.name}</span>
+              <span className="font-mono text-[18px] font-medium text-amber-ink">{peso(v.price)}</span>
             </button>
-          ))}
-        </div>
-      </div>
-    </div>
+          </li>
+        ))}
+      </ul>
+    </Sheet>
   )
 }
