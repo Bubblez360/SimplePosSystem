@@ -114,6 +114,7 @@ const strings = {
     // PWA
     installApp: 'I-install ang App',
     installHint: 'I-add sa Home Screen para mas madaling gamitin',
+    iosInstallHint: 'Sa Safari: i-tap ang Share (⬆) sa baba, tapos piliin ang "Add to Home Screen".',
     // Gastos
     gastos: 'Gastos',
     addGastos: 'I-dagdag',
@@ -346,6 +347,7 @@ const strings = {
     // PWA
     installApp: 'Install App',
     installHint: 'Add to Home Screen for quick access',
+    iosInstallHint: 'In Safari: tap Share (⬆) at the bottom, then choose "Add to Home Screen".',
     // Gastos
     gastos: 'Expenses',
     addGastos: 'Add',

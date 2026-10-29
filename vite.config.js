@@ -6,7 +6,8 @@ export default defineConfig(({ command }) => ({
   // Base path differs per host:
   //  - GitHub Pages project site  -> /SimplePosSystem/ (subpath)
   //  - Vercel (root domain) + dev  -> /
-  base: command === 'build' && !process.env.VERCEL ? '/SimplePosSystem/' : '/',
+  //  - Android APK (Capacitor)     -> ./  (APK=1; assets are bundled, no service worker)
+  base: process.env.APK ? './' : command === 'build' && !process.env.VERCEL ? '/SimplePosSystem/' : '/',
   server: {
     port: parseInt(process.env.PORT || '5173'),
     strictPort: false,
@@ -14,6 +15,9 @@ export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     VitePWA({
+      // The APK ships its own copy of every asset, so a service worker would only
+      // add a second, stale cache.
+      disable: !!process.env.APK,
       registerType: 'autoUpdate',
       manifest: {
         name: 'TindaPOS',
@@ -26,7 +30,10 @@ export default defineConfig(({ command }) => ({
         start_url: '.',
         scope: '.',
         icons: [
-          { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }
         ]
       },
       workbox: {
